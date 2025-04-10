@@ -1,5 +1,5 @@
 [package]
-name = "nova"
+name = "tradewars"
 version = "0.0.1"
 edition = "2024"
 
@@ -7,4 +7,4 @@ edition = "2024"
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 
 [addresses]
-nova = "0x0"
+tradewars = "0x0"

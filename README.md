@@ -1,4 +1,4 @@
-# Nova
+# Trade Wars
 
 The on-chain, browser based, real-time, resource management game.
 
