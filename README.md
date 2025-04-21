@@ -1,10 +1,7 @@
 # Trade Wars
 
-The on-chain, browser based, real-time, resource management game.
+A fully on-chain, interplanetary trading game.
 
-Just a learning project to get to understand Move in deep.
+Set in a post-apocalyptic future, Trade Wars challenges players to rebuild civilization across the stars through trading, colonization, and resource management. Each player begins on a planet with limited production capabilities and must interact with other players and The Company (a centralized in-game authority) to acquire fuel (Nova) and essential resources.
 
-Did you play OGame back in the days? Doing trading agreements on forums or
-chats kind of sucks, lets put it on-chain and make the game resources FTs and the spaceships
-NFTs so they can be traded on any market compiling to Sui standards, and watch those
-trades trigger in-game stuff. (That's my tl;dr intention, let's see if it's possible 😁)
+![Cargo Ship](media/cargo_ship.png)
