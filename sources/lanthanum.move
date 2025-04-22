@@ -5,6 +5,7 @@
 module trade_wars::lanthanum;
 
 use sui::coin;
+use sui::url;
 
 /// Name of the coin
 public struct LANTHANUM has drop {}
@@ -16,8 +17,7 @@ fun init(witness: LANTHANUM, ctx: &mut TxContext) {
         b"LAN",
         b"LANTHANUM",
         b"Lanthanum, one of the rare-earth resources of Trade Wars",
-        // TODO: add appropriate logo url
-        option::none(),
+        option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/lanthanum.png")),
         ctx,
     );
     transfer::public_freeze_object(metadata);

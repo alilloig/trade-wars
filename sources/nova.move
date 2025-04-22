@@ -5,6 +5,7 @@
 module trade_wars::nova;
 
 use sui::coin;
+use sui::url;
 
 /// Name of the coin
 public struct NOVA has drop {}
@@ -13,12 +14,11 @@ fun init(witness: NOVA, ctx: &mut TxContext) {
     let (treasury, metadata) = coin::create_currency(
         witness,
         9,
-        b"NYX",
-        b"Nyx Token",
-        b"The Nova in-game currency",
-        // TODO: add appropriate logo url
-        option::none(),
-        ctx,
+        b"NVA",
+        b"NOVA",
+        b"Nova, the ultimate fuel powering humanity interplanetary travels",
+        option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/nova.png")),
+        ctx
     );
     transfer::public_freeze_object(metadata);
     transfer::public_transfer<coin::TreasuryCap<NOVA>>(treasury, tx_context::sender(ctx))

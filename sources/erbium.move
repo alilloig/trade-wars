@@ -5,6 +5,7 @@
 module trade_wars::erbium;
 
 use sui::coin;
+use sui::url;
 
 /// Name of the coin
 public struct ERBIUM has drop {}
@@ -16,8 +17,7 @@ fun init(witness: ERBIUM, ctx: &mut TxContext) {
         b"ERB",
         b"Erbium",
         b"Erbium, one of the rare-earth resources of Trade Wars",
-        // TODO: add appropriate logo url
-        option::none(),
+        option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/erbium.png")),
         ctx,
     );
     transfer::public_freeze_object(metadata);
