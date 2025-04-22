@@ -18,7 +18,7 @@ fun init(witness: LANTHANUM, ctx: &mut TxContext) {
         b"LANTHANUM",
         b"Lanthanum, one of the rare-earth resources of Trade Wars",
         option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/lanthanum.png")),
-        ctx,
+        ctx
     );
     transfer::public_freeze_object(metadata);
     transfer::public_transfer<coin::TreasuryCap<LANTHANUM>>(treasury, tx_context::sender(ctx))

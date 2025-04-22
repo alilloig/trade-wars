@@ -18,7 +18,7 @@ fun init(witness: ERBIUM, ctx: &mut TxContext) {
         b"Erbium",
         b"Erbium, one of the rare-earth resources of Trade Wars",
         option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/erbium.png")),
-        ctx,
+        ctx
     );
     transfer::public_freeze_object(metadata);
     transfer::public_transfer<coin::TreasuryCap<ERBIUM>>(treasury, tx_context::sender(ctx))
