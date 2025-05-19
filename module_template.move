@@ -10,13 +10,14 @@ module trade_wars::
 // === Constants ===
 
 // === Structs ===
-
-    // ::StructName
-
-// === Struct Private Functions ===
-// === Struct Package Functions ===
-// === Struct Entry Functions ===
-// === Struct Public Functions ===
+// ::constructors
+// ::getters
+// ::setters
+// ::public functions
+// ::view functions
+// ::admin functions
+// ::package functions
+// ::private functions
 
 
 // === Events ===

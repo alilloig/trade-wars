@@ -4,15 +4,14 @@
 module trade_wars::universe;
 
 // === Imports ===
-// TradeWars::
+// trade_wars::
 use trade_wars::erbium::{Self, ERBIUM};
-
-// Sui:: Std::
+// sui::
 use sui::balance::{Self, Balance};
 use sui::event::{Self};
 use sui::display::{Self, Display};
 use sui::package::{Publisher};
-use sui::bag::{Self, Bag};
+// std::
 use std::string::{String};
 
 // === Errors ===
@@ -27,7 +26,7 @@ public struct UniverseCreatorCapability has key, store {
     id: UID,
     universe: ID
 }
-
+// === ::UniverseCreatorCapability Private Functions ===
 fun create_universe_creator_capability(universe: &Universe, ctx: &mut TxContext): UniverseCreatorCapability {
     UniverseCreatorCapability { 
         id: object::new(ctx), 
@@ -45,6 +44,7 @@ public struct UniverseInfo has store, copy, drop {
     open: bool
 }
 
+// === ::UniverseInfo Package Functions ===
 public(package) fun create_universe_info(name: String, galaxies: u8, systems: u8, planets: u8): UniverseInfo {
     UniverseInfo {
         name,
@@ -70,19 +70,20 @@ public(package) fun close_universe_info(self: &mut UniverseInfo) {
 // ::Universe
 public struct Universe has key, store {
     id: UID,
-    elements_sources: Option<Bag>,
-    info: UniverseInfo
+    info: UniverseInfo,
+    erbium_source: Option<ID>,
 }
 
+// === ::Universe Package Functions ===
 public(package) fun create_universe(
     info: UniverseInfo,
     genesis: u64,
     ctx: &mut TxContext
 ): (Universe, UniverseCreatorCapability) {
     let universe = Universe {
+        info,
+        erbium_source: option::none(),
         id: object::new(ctx),
-        elements_sources: option::none(),
-        info: info,
     };
     let capability = create_universe_creator_capability(&universe, ctx);
     event::emit(UniverseCreated {
@@ -93,8 +94,8 @@ public(package) fun create_universe(
     (universe, capability)
 }
 
-public(package) fun set_universe_sources(self: &mut Universe, sources: Bag) {
-    self.elements_sources.fill(sources);
+public(package) fun link_elements_sources(self: &mut Universe, erb_source: ID) {
+    link_erbium_source(self, erb_source);
 }
 
 public(package) fun open_universe(self: &mut Universe, creator_cap: &UniverseCreatorCapability) {
@@ -111,117 +112,16 @@ public(package) fun creator_has_access(self: &Universe, creator_cap: &UniverseCr
     object::id(self) == creator_cap.universe
 }
 
-// ::UniverseElementSource
-public struct UniverseElementSource<phantom T> has key, store {
-    id: UID,
-    universe: ID,
-    main_source: ID,
-    mines_production_factor: u64,
-    sources_refill_threshold: u64,
-    reserves: Balance<T>,
+// === ::Universe Private Functions ===
+fun link_erbium_source(self: &mut Universe, erb_source: ID) {
+    self.erbium_source.fill(erb_source);
 }
-
-public(package) fun create_universe_element_source<T>(
-    universe: ID,
-    main_source: ID,
-    mines_production_factor: u64,
-    sources_refill_threshold: u64,
-    ctx: &mut TxContext
-): UniverseElementSource<T> {
-    UniverseElementSource<T> {
-        id: object::new(ctx),
-        universe,
-        main_source,
-        mines_production_factor,
-        sources_refill_threshold,
-        reserves: balance::zero<T>()
-    }
-}
-
-
-public(package) fun extract<T>(self: &mut UniverseElementSource<T>, amount: u64): Balance<T> {
-    assert!(self.reserves.value() <= amount, ENotEnoughReserves);
-    let extraction = self.reserves.split(amount);
-    if (self.reserves.value() < self.sources_refill_threshold) {
-        event::emit(UniverseElementSourceLowReserves {
-            id: object::id(self)
-        });
-    };
-    extraction
-}
-
-public(package) fun join<T>(self: &mut UniverseElementSource<T>, balance: Balance<T>): u64 {
-    self.reserves.join(balance)
-}
-
-public(package) fun get_reserves<T>(self: &UniverseElementSource<T>): u64 {
-    self.reserves.value()
-}
-
-public(package) fun get_mines_production_factor<T>(self: &UniverseElementSource<T>): u64 {
-    self.mines_production_factor
-}
-
-public(package) fun get_sources_refill_threshold<T>(self: &UniverseElementSource<T>): u64 {
-    self.sources_refill_threshold
-}
-
-/*
-// ::Galaxy
-public struct Galaxy has store {
-    position: u8,
-    systems: vector<System>
-}
-
-fun create_galaxies(qty: u8, systems: u8): vector<Galaxy> {
-    let mut galaxies = vector::empty<Galaxy>();
-    let mut i: u8 = 0;
-    while (i < qty) {
-        galaxies.push_back(create_galaxy(i, systems));
-        i = i + 1
-    };
-    galaxies
-}
-
-fun create_galaxy(position: u8, systems: u8): Galaxy {
-    Galaxy {
-        position: position,
-        systems: create_systems(systems)
-    }
-}
-
-// ::System
-public struct System has store {
-    position: u8,
-    //planets: vector<Planet<Element>>,
-}
-
-fun create_systems(qty: u8): vector<System> {
-    let mut systems = vector::empty<System>();
-    let mut i: u8 = 0;
-    while (i < qty) {
-        systems.push_back(create_system(i));
-        i = i + 1
-    };
-    systems    
-}
-
-fun create_system(position: u8): System {
-    System {
-        position: position
-    }
-}
-*/
 
 // == Events ==
 public struct UniverseCreated has copy, drop {
     id: ID,
     genesis: u64,
     info: UniverseInfo
-}
-
-public struct UniverseElementSourceLowReserves has copy, drop {
-    id: ID
 }
 
 // === Method Aliases ===

@@ -10,15 +10,18 @@ use trade_wars::universe::{
                             Universe, 
                             UniverseInfo, 
                             UniverseCreatorCapability,
-                            UniverseElementSource
+                            //UniverseElementSource
                           };
-use trade_wars::overseer::{Self};
-use trade_wars::erbium::{Self, ERBIUM, ERB};
+use trade_wars::element_source::{Self, ElementSource};
+use trade_wars::universe_element_source::{Self, UniverseElementSource};
+use trade_wars::mine_configuration_parameters::{Self, MineConfigurationParameters};
+use trade_wars::erbium::{ERBIUM};
+//use trade_wars::lanthanum::{Self, LANTHANUM};
+//use trade_wars::thorium::{Self, THORIUM};
 // sui::
 use sui::package::{Self};
 use sui::event::{Self};
 use sui::vec_map::{Self, VecMap};
-use sui::bag::{Self, Bag};
 use sui::clock::Clock;
 use std::string::{String};
 use sui::balance::{Self, Balance};
@@ -30,12 +33,11 @@ const EUniverseCreationInsufficientPayment: u64 = 0;
 const EOpeningOpenUniverse: u64 = 1;
 const EClosingClosedUniverse: u64 = 2;
 const ENotUniverseCreator: u64 = 3;
-const EUnnecessaryRefill: u64 = 4;
+
 
 // === Constants ===
-const InitialMinesProductionFactor: u64 = 2;
-const InitialRefillQty: u64 = 1000000;
-const InitialRefillThreshold: u64 = 500000;
+const InitialErbiumMinesProductionFactor: u64 = 2;
+const InitialErbiumMinesErbiumUpgradeCost: u64 = 1000000;
 
 // === Structs ===
 // ::TRADE_WARS otw
@@ -46,7 +48,7 @@ public struct GameAdminCapability has key {
     id: UID
 }
 
-// === ::TradeWarsInfo ===
+// === ::TradeWarsPublicInfo ===
 /// Auxiliary object for keeping public game info, allowing gets without congest main object
 /// We trade having some duplicate info for having two shared objects spreading access to them
 /// so they get less penalized on consensus
@@ -57,7 +59,8 @@ public struct TradeWarsPublicInfo has key {
     universe_creation_price: u64,
 }
 
-// === ::TradeWarsPublicInfo Private Functions ===
+    // === ::TradeWarsPublicInfo Private Functions ===
+
 fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsPublicInfo {
     TradeWarsPublicInfo {
         id: object::new(ctx),
@@ -67,7 +70,8 @@ fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsPublicInfo {
     }
 }
 
-// === ::TradeWarsPublicInfo Entry Functions ===
+    // === ::TradeWarsPublicInfo Entry Functions ===
+
 /// Returns an array of Universes ID only for open universes so clients can fetch their respective Display
 entry fun get_open_universes(self: &TradeWarsPublicInfo): vector<ID> {
     self.open_universes
@@ -86,18 +90,19 @@ entry fun get_public_universe_creation(self: &TradeWarsPublicInfo): bool {
 // === ::TradeWars ===
 public struct TradeWars has key {
     id: UID,
-    elements_sources: Bag,
+    erbium_source: Option<ID>,
     universes: VecMap<ID, UniverseInfo>,
     public_universe_creation: bool,
     universe_creation_price: u64,
     universe_creation_fees: Balance<SUI>
 }
 
-// === ::TradeWars Private Functions ===
+    // === ::TradeWars Private Functions ===
+
 fun new_game(_cap: &GameAdminCapability, ctx: &mut TxContext): TradeWars {
     TradeWars {
         id: object::new(ctx),
-        elements_sources: bag::new(ctx),
+        erbium_source: option::none(),
         universes: vec_map::empty(),
         public_universe_creation: false,
         universe_creation_price: 0,
@@ -105,8 +110,10 @@ fun new_game(_cap: &GameAdminCapability, ctx: &mut TxContext): TradeWars {
     }
 }
 
-// === ::TradeWars Entry Functions ===
+    // === ::TradeWars Entry Functions ===
+
 /// After deployment of contracts we need to call this to store the elements TreasureCaps inside the element sources
+#[allow(lint(share_owned))]
 entry fun create_element_sources(
     self: &mut TradeWars, 
     _cap: &GameAdminCapability, 
@@ -114,11 +121,18 @@ entry fun create_element_sources(
     ctx: &mut TxContext
 ) {
     // Create the element source
-    let erb_source = create_source<ERBIUM>(erb_treasury, ctx);
+    let erb_source = element_source::create_source<ERBIUM>(
+        erb_treasury, 
+        mine_configuration_parameters::create_mine_configuration_parameters<ERBIUM>(
+            InitialErbiumMinesProductionFactor,
+            InitialErbiumMinesErbiumUpgradeCost
+        ),
+        ctx
+    );
     // Store the element source ID in the core game object
-    self.elements_sources.add(erbium::get_erbium_witness(), object::id(&erb_source));
+    self.erbium_source.fill(object::id(&erb_source));
     // Share the element source
-    transfer::share_object(erb_source);
+    transfer::public_share_object(erb_source);
     //self.elements_sources.add(lanthanum::get_lanthanum_witness(), lan);
     //self.elements_sources.add(thorium::get_thorium_witness(), tho);
 }
@@ -149,7 +163,8 @@ entry fun public_start_universe(
         systems, 
         planets, 
         clock, 
-        ctx);
+        ctx
+    );
 }
 
 /// Game owner can always create new universes for free
@@ -173,7 +188,8 @@ entry fun admin_start_universe(
         systems, 
         planets, 
         clock, 
-        ctx);
+        ctx
+    );
 }
 
 /// Opens registration on universe and updates the open state on both the central game and game info objects
@@ -204,71 +220,42 @@ entry fun close_universe(self: &mut TradeWars, game_info: &mut TradeWarsPublicIn
     universe.open_universe(creator_cap);
 }
 
+// Entry methods for modifying global game settings
+
 entry fun set_universe_creation_fees(self: &mut TradeWars, _cap: &GameAdminCapability, price: u64, info: &mut TradeWarsPublicInfo) {
     self.universe_creation_price = price;
     info.universe_creation_price = price;
 }
 
-// === ::ElementSource ===
-/// ElementSource is a wrapper for treasury allowing permissionless minting of elements
-public struct ElementSource<phantom T> has key, store {
-    id: UID,
-    treasury: TreasuryCap<T>,
-    mines_production_factor: u64,
-    sources_refill_qty: u64,
-    sources_refill_threshold: u64
-}
-
-// === ::ElementSource Private Functions ===
-fun create_source<T>(treasury: TreasuryCap<T>, ctx: &mut TxContext): ElementSource<T> {
-    ElementSource<T> {
-        id: object::new(ctx),
-        treasury,
-        mines_production_factor: InitialMinesProductionFactor,
-        sources_refill_qty: InitialRefillQty,
-        sources_refill_threshold: InitialRefillThreshold
-    }
-}
-
-// === ::ElementSource Package Functions ===
-/// universe sources will call that to refuel
-public(package) fun mint_balance<T>(
-    self: &mut ElementSource<T>,
-    amount: u64
-): Balance<T> {
-    self.treasury.mint_balance<T>(amount)
-}
-
-public(package) fun get_sources_refill_qty<T>(self: &ElementSource<T>): u64 {
-    self.sources_refill_qty
-}
-
-/// universe sources will deposit here to burn
-public(package) fun burn<T>(
-    self: &mut ElementSource<T>, 
-    coin: Coin<T>
+entry fun set_erbium_mines_production<ERBIUM>(
+    self: &mut ElementSource<ERBIUM>, 
+    _cap: &GameAdminCapability, 
+    production: u64,
+    erb_upgrade_cost: u64
 ) {
-    self.treasury.burn(coin);
+    element_source::set_mine_parameters(
+        self, 
+        mine_configuration_parameters::create_mine_configuration_parameters<ERBIUM>(
+            production, 
+            erb_upgrade_cost
+        )
+    );
 }
 
-// === ::ElementSource Entry Functions ===
-// Any universe admin can call this to refill its source if it's below the threshold
-entry fun refill_universe_source<T>(self: &mut ElementSource<T>, universe_source: &mut UniverseElementSource<T>, _cap: &UniverseCreatorCapability): u64 {
-    assert!(self.sources_refill_threshold < universe_source.get_reserves<T>(), EUnnecessaryRefill);
-    let refill_qty = self.get_sources_refill_qty<T>();
-    universe_source.join(self.mint_balance<T>(refill_qty))
+entry fun set_erbium_mines_refill_qty<ERBIUM>(
+    self: &mut ElementSource<ERBIUM>, 
+    _cap: &GameAdminCapability, 
+    refill_qty: u64
+) {
+    element_source::set_sources_refill_qty(self, refill_qty);
 }
 
-entry fun set_erbium_mines_production<ERBIUM>(self: &mut ElementSource<ERBIUM>, _cap: &GameAdminCapability, production: u64) {
-    self.mines_production_factor = production;
-}
-
-entry fun set_erbium_mines_refill_qty<ERBIUM>(self: &mut ElementSource<ERBIUM>, _cap: &GameAdminCapability, refill_qty: u64) {
-    self.sources_refill_qty = refill_qty;
-}
-
-entry fun set_erbium_mines_refill_threshold<ERBIUM>(self: &mut ElementSource<ERBIUM>, _cap: &GameAdminCapability, refill_threshold: u64) {
-    self.sources_refill_threshold = refill_threshold;
+entry fun set_erbium_mines_refill_threshold<ERBIUM>(
+    self: &mut ElementSource<ERBIUM>, 
+    _cap: &GameAdminCapability, 
+    refill_threshold: u64
+) {
+    element_source::set_sources_refill_threshold(self, refill_threshold);
 }
 
 // === Events ===
@@ -328,7 +315,7 @@ fun start_universe(
         planets
     );
     // Create a new universe object
-    let (universe, creator_capability) = universe::create_universe(
+    let (mut universe, creator_capability) = universe::create_universe(
         info,  
         clock.timestamp_ms(), 
         ctx
@@ -336,13 +323,15 @@ fun start_universe(
     // Register the universe in the game object
     self.universes.insert<ID, UniverseInfo>(object::id(&universe), info);
     // Create the universe element source
-    let universe_erbium_source = universe::create_universe_element_source<ERBIUM>(
+    let universe_erbium_source = universe_element_source::create_universe_element_source<ERBIUM>(
         object::id(&universe),
         object::id(erb_source),
-        erb_source.mines_production_factor,
-        erb_source.sources_refill_qty,
+        element_source::get_sources_refill_threshold(erb_source),
+        element_source::get_mine_parameters(erb_source),
         ctx
     );
+    // Link the universe element source to the universe
+    universe.link_elements_sources(object::id(&universe_erbium_source));
     // Share the universe element source
     transfer::public_share_object(universe_erbium_source);
     // Share the universe object

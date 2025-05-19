@@ -4,23 +4,22 @@
 module trade_wars::planet;
 
 // === Imports ===
-// TradeWars::
-use trade_wars::universe::{Self, UniverseElementSource};
+// trade_wars::
+use trade_wars::universe_element_source::{Self, UniverseElementSource};
 use trade_wars::element_store::{Self, ElementStore};
-use trade_wars::element_mine::{Self, ElementMine, MiningCapability};
+use trade_wars::element_mine::{Self, ElementMine};
 use trade_wars::erbium::{Self, ERBIUM};
 //use trade_wars::lanthanum::{Self, LANTHANUM};
 //use trade_wars::thorium::{Self, THORIUM};
-// Sui:: Std::
+// sui::
 use sui::balance::{Self, Balance};
-use sui::bag::{Self,Bag};
 use sui::random::RandomGenerator;
 use sui::clock::Clock;
 
 // === Errors ===
 const ENotPlanetOverseer: u64 = 0;
-const ENotExpectedElement: u64 = 0;
-const EPurchaseElementNotMatching: u64 = 1;
+//const ENotExpectedElement: u64 = 0;
+//const EPurchaseElementNotMatching: u64 = 1;
 
 // === Constants ===
 
@@ -32,34 +31,36 @@ public struct PlanetInfo has store, copy, drop {
     position: u64,
 }
 
+// === ::PlanetInfo Package Functions ===
 public(package) fun create_planet_info(galaxy: u64, system: u64, position: u64): PlanetInfo {
     PlanetInfo { galaxy, system, position}
 }
 
+// === ::PlanetInfo Public Functions ===
 public fun calculate_travel_distance(self: &PlanetInfo, destination: &PlanetInfo): u64 {
     // lol came up with how to calculate travel costs
     1
-}
+}   
 
-// ::Planet
+// === ::Planet ===
 public struct Planet<phantom T> has key {
     id: UID,
-    mining_capability: MiningCapability<T>,
     info: PlanetInfo,
     mine: ElementMine<T>,
-    self_store: ElementStore<T>,
-    stores: Bag
-    //trade_port: TradePort
+    erbium_store: ElementStore<ERBIUM>,
+    //lanthanum_store: ElementStore<LANTHANUM>,
+    //thorium_store: ElementStore<THORIUM>,
 }
 
+// === ::Planet Private Functions ===
 fun create_planet<T>(info: PlanetInfo, source: ID, ctx: &mut TxContext): Planet<T> {
     Planet {
         id: object::new(ctx),
-        mining_capability: element_mine::create_mining_capability<T>(),
         info: info,
-        mine: element_mine::create_mine<T>(source),
-        self_store: element_store::create_store<T>(),
-        stores: element_store::create_planet_stores(ctx)
+        mine: element_mine::create_mine<T>(source, 100),
+        erbium_store: element_store::create_store<ERBIUM>(),
+        //lanthanum_store: element_store::create_store<LANTHANUM>(),
+        //thorium_store: element_store::create_store<THORIUM>(),
     }
 }
 
@@ -68,23 +69,37 @@ fun check_overseer_authority<T>(self: &Planet<T>, cap: &PlanetCapability): bool 
     object::id_address(self) == cap.direction
 }
 
-entry fun mine_to_store<T>(self: &mut Planet<T>, source: &mut UniverseElementSource<T>, c: &Clock, cap: &PlanetCapability) {
+// === ::Planet Entry Functions ===
+entry fun extract_erbium(
+    self: &mut Planet<ERBIUM>, 
+    cap: &PlanetCapability, 
+    source: &mut UniverseElementSource<ERBIUM>, 
+    c: &Clock
+) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    self.self_store.join(self.mine.extract<T>(source, c.timestamp_ms()));
+    self.erbium_store.join<ERBIUM>(
+        self.mine.extract<ERBIUM>(source, c.timestamp_ms())
+    );
 }
 
-entry fun upgrade_mine<T>(self: &mut Planet<T>, cap: &PlanetCapability) {
+entry fun upgrade_mine<T>(
+    self: &mut Planet<T>, 
+    cap: &PlanetCapability,
+    erb_source: &mut UniverseElementSource<ERBIUM>,
+) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    self.mine.level_up_mine(&mut self.stores);
+    let erb = self.erbium_store.split<ERBIUM>(self.mine.get_upgrade_erbium_cost());
+    self.mine.upgrade_mine(erb_source, erb);
 }
 
-// ::PlanetCapability
+// === ::PlanetCapability ===
 // Identifies overseer as owner of planet and allows operations over it
 public struct PlanetCapability has key, store {
     id: UID,
     direction: address,
 }
 
+// === ::PlanetCapability Private Functions ===
 fun create_planet_capability(addr: address, ctx: &mut TxContext): PlanetCapability {
     PlanetCapability {
         id: object::new(ctx),
@@ -117,11 +132,11 @@ fun generate_random_planet(randomizer: &mut RandomGenerator): PlanetInfo {
     let random_element = randomizer.generate_u64_in_range(1, 3);
     let mut planet_info: Option<PlanetInfo> = option::none();
     if (random_element == 1 ) {
-        planet_info.fill(planet_info::create_planet_info(1, 1, 1));
+        planet_info.fill(create_planet_info(1, 1, 1));
     } else if (random_element == 2 ) {
-        planet_info.fill(planet_info::create_planet_info(1, 1, 1));
+        planet_info.fill(create_planet_info(1, 1, 1));
     } else if (random_element == 3 ) {
-        planet_info.fill(planet_info::create_planet_info(1, 1, 1));
+        planet_info.fill(create_planet_info(1, 1, 1));
     };
     planet_info.destroy_some()
 }

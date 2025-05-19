@@ -8,49 +8,66 @@
 module trade_wars::element_mine;
 
 // === Imports ===
-use trade_wars::universe::{Self, UniverseElementSource};
-use sui::table::{Self, Table};
-use sui::bag::{Self, Bag};
-use sui::balance::{Self, Balance};
+// trade_wars::
+use trade_wars::universe_element_source::{UniverseElementSource};
+use trade_wars::erbium::{ERBIUM};
+//use trade_wars::lanthanum::{Self, LANTHANUM};
+//use trade_wars::thorium::{Self, THORIUM};
+// sui::
+use sui::balance::{Balance};
 
 // === Errors ===
+const ENotEnoughERBIUM: u64 = 0;
 
 // === Constants ===
 const MillisecondsPerMinute: u64 = 60000;
 
 // === Structs ===
-// ::Mine
+// === ::ElementMine ===
 public struct ElementMine<phantom T> has store {
     source: ID,
     level: u64,
     last_extraction: u64,
-    //upgrade_cost: Table<Element, u64>,
+    erbium_upgrade_cost: u64,
 }
 
-public(package) fun create_mine<T>(source: ID): ElementMine<T> {
+// === ::ElementMine Package Functions ===
+public(package) fun create_mine<T>(
+    source: ID, 
+    erbium_upgrade_cost: u64
+): ElementMine<T> {
     ElementMine {
         source,
         level: 1,
         last_extraction: 0,
-        //upgrade_cost: get_upgrade_costs(&info.element(), ctx),
+        erbium_upgrade_cost,
     }
 }
 
-public(package) fun level_up_mine<T>(self: &mut ElementMine<T>, required_elements: &mut Bag) {
-    self.level = self.level + 1
+public(package) fun get_upgrade_erbium_cost<T>(self: &ElementMine<T>): u64 {
+    self.erbium_upgrade_cost * self.level
+}
+
+public(package) fun upgrade_mine<T>(
+    self: &mut ElementMine<T>, 
+    erb_source: &mut UniverseElementSource<ERBIUM>,
+    erb: Balance<ERBIUM>
+) {
+    assert!(erb.value() >= self.erbium_upgrade_cost, ENotEnoughERBIUM);
+    erb_source.return_reserves<ERBIUM>(erb);
+    self.level = self.level + 1;
 }
 
 public(package) fun extract<T>(self: &mut ElementMine<T>, source: &mut UniverseElementSource<T>, time: u64): Balance<T> {
-    let minutes_since_last_extraction = (time - self.last_extraction) / (MillisecondsPerMinute * source.production());
-    let mev = minutes_since_last_extraction * self.level;
+    self.update_upgrade_costs<T>(source);
+    let minutes_since_last_extraction = (time - self.last_extraction) / (MillisecondsPerMinute);
+    let mev = minutes_since_last_extraction * self.level / source.mines_parameters<T>().get_production_factor();
+    self.last_extraction = time;
     source.extract(mev)
 }
 
-// ::MiningCapability
-public struct MiningCapability<phantom T> has store {}
-
-public(package) fun create_mining_capability<T>(): MiningCapability<T> {
-    MiningCapability { }
+fun update_upgrade_costs<T>(self: &mut ElementMine<T>, source: &UniverseElementSource<T>) {
+    self.erbium_upgrade_cost = source.mines_parameters<T>().get_erbium_upgrade_cost();
 }
 
 // === Events ===
