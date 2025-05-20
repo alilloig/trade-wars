@@ -4,13 +4,13 @@
 module trade_wars::overseer;
 
 // === Imports ===
-use trade_wars::universe::{Self, Universe};
+use trade_wars::universe::{Universe};
 use trade_wars::universe_element_source::{UniverseElementSource};
 use trade_wars::planet::{PlanetCapability};
 use trade_wars::erbium::{ERBIUM};
 use trade_wars::lanthanum::{LANTHANUM};
 use trade_wars::thorium::{THORIUM};
-use sui::random::{Self, Random};
+use sui::random::{Random};
 use sui::table::{Self, Table};
 
 // === Errors ===
