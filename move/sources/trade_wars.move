@@ -156,7 +156,7 @@ entry fun create_element_sources(
     lan_treasury: TreasuryCap<LANTHANUM>,
     tho_treasury: TreasuryCap<THORIUM>,
     ctx: &mut TxContext,
-) {
+): (ID, ID, ID) {
     // Create the erbium source
     let erb_source = element_source::create_source<ERBIUM>(
         erb_treasury,
@@ -168,10 +168,12 @@ entry fun create_element_sources(
         ),
         ctx,
     );
+    let erb_source_id = object::id(&erb_source);
     // Store the element source ID in the core game object
-    self.erbium_source.fill(object::id(&erb_source));
+    self.erbium_source.fill(erb_source_id);
     // Share the element source
     transfer::public_share_object(erb_source);
+
     // Create the lanthanum source
     let lan_source = element_source::create_source<LANTHANUM>(
         lan_treasury,
@@ -183,10 +185,12 @@ entry fun create_element_sources(
         ),
         ctx,
     );
+    let lan_source_id = object::id(&lan_source);
     // Store the element source ID in the core game object
-    self.lanthanum_source.fill(object::id(&lan_source));
+    self.lanthanum_source.fill(lan_source_id);
     // Share the element source
     transfer::public_share_object(lan_source);
+
     // Create the thorium source
     let tho_source = element_source::create_source<THORIUM>(
         tho_treasury,
@@ -198,10 +202,12 @@ entry fun create_element_sources(
         ),
         ctx,
     );
+    let tho_source_id = object::id(&tho_source);
     // Store the element source ID in the core game object
-    self.thorium_source.fill(object::id(&tho_source));
+    self.thorium_source.fill(tho_source_id);
     // Share the element source
     transfer::public_share_object(tho_source);
+    (erb_source_id, lan_source_id, tho_source_id)
 }
 
 /// Anyone can call this to start their own universe of the game by paying a fee
@@ -217,7 +223,7 @@ entry fun public_start_universe(
     payment: Coin<SUI>,
     clock: &Clock,
     ctx: &mut TxContext,
-) {
+): (ID, ID, ID, ID) {
     // Check if the payment is enough
     assert!(payment.value() >= self.universe_creation_price, EUniverseCreationInsufficientPayment);
     // Transfer the payment to the Game vault
@@ -234,7 +240,7 @@ entry fun public_start_universe(
         planets,
         clock,
         ctx,
-    );
+    )
 }
 
 /// Game owner can always create new universes for free
@@ -250,7 +256,7 @@ entry fun admin_start_universe(
     planets: u8,
     clock: &Clock,
     ctx: &mut TxContext,
-) {
+): (ID, ID, ID, ID) {
     // Start Universe
     start_universe(
         self,
@@ -263,7 +269,7 @@ entry fun admin_start_universe(
         planets,
         clock,
         ctx,
-    );
+    )
 }
 
 /// Opens registration on universe and updates the open state on both the central game and game info objects
@@ -483,7 +489,8 @@ fun start_universe(
     planets: u8,
     clock: &Clock,
     ctx: &mut TxContext,
-) {
+): (ID, ID, ID, ID) {
+
     // Construct the universe info
     let info = universe::create_universe_info(
         name,
@@ -497,39 +504,44 @@ fun start_universe(
         clock.timestamp_ms(),
         ctx,
     );
+    let universe_id = object::id(&universe);
     // Register the universe in the game object
-    self.universes.insert<ID, UniverseInfo>(object::id(&universe), info);
+    self.universes.insert<ID, UniverseInfo>(universe_id, info);
+
     // Create the universe element source for erbium
     let universe_erbium_source = universe_element_source::create_universe_element_source<ERBIUM>(
-        object::id(&universe),
+        universe_id,
         object::id(erb_source),
         element_source::get_sources_refill_threshold(erb_source),
         element_source::get_mine_parameters(erb_source),
         ctx,
     );
+    let universe_erbium_source_id = object::id(&universe_erbium_source);
+
     // Create the universe element source for lanthanum
-    let universe_lanthanum_source = universe_element_source::create_universe_element_source<
-        LANTHANUM,
-    >(
-        object::id(&universe),
+    let universe_lanthanum_source = universe_element_source::create_universe_element_source<LANTHANUM>(
+        universe_id,
         object::id(lan_source),
         element_source::get_sources_refill_threshold(lan_source),
         element_source::get_mine_parameters(lan_source),
         ctx,
     );
+    let universe_lanthanum_source_id = object::id(&universe_lanthanum_source);
     // Create the universe element source for thorium
     let universe_thorium_source = universe_element_source::create_universe_element_source<THORIUM>(
-        object::id(&universe),
+        universe_id,
         object::id(tho_source),
         element_source::get_sources_refill_threshold(tho_source),
         element_source::get_mine_parameters(tho_source),
         ctx,
     );
+    let universe_thorium_source_id = object::id(&universe_thorium_source);
+
     // Link the universe element source to the universe
     universe.link_elements_sources(
-        object::id(&universe_erbium_source),
-        object::id(&universe_lanthanum_source),
-        object::id(&universe_thorium_source),
+        universe_erbium_source_id,
+        universe_lanthanum_source_id,
+        universe_thorium_source_id,
     );
     // Share all universe element sources
     transfer::public_share_object(universe_erbium_source);
@@ -539,6 +551,7 @@ fun start_universe(
     transfer::public_share_object(universe);
     // Transfer creator capability
     transfer::public_transfer(creator_capability, ctx.sender());
+    (universe_id, universe_erbium_source_id, universe_lanthanum_source_id, universe_thorium_source_id)
 }
 
 // === Test Functions ===
