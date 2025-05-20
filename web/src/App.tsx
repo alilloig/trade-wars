@@ -50,7 +50,7 @@ function App() {
             style={{ cursor: 'pointer' }} 
             onClick={() => setCurrentPage({ type: 'home' })}
           >
-            dApp Starter Template
+            Trade Wars
           </Heading>
         </Box>
 
