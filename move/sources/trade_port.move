@@ -3,8 +3,7 @@
 
 module trade_wars::trade_port;
 
-// === Imports ===
-use sui::balance::{Balance};
+use sui::balance::Balance;
 
 // === Errors ===
 
@@ -13,11 +12,11 @@ use sui::balance::{Balance};
 // === Structs ===
 /// Represents a trading port where players can exchange different elements
 /// with specific exchange rates
-public struct TradePort<T,K> has store {
+public struct TradePort<T, K> has store {
     offer_element: T,
     ask_element: K,
     quote: u64,
-    offer_store: Option<Balance<T>>
+    offer_store: Option<Balance<T>>,
 }
 
 // === Events ===

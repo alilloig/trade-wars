@@ -6,12 +6,9 @@
 /// allowing each universe to maintain its own independent economy.
 module trade_wars::universe_element_source;
 
-// === Imports ===
-// trade_wars::
-use trade_wars::mine_configuration_parameters::{MineConfigurationParameters};
-// sui::   
 use sui::balance::{Self, Balance};
-use sui::event::{Self};
+use sui::event;
+use trade_wars::mine_configuration_parameters::MineConfigurationParameters;
 
 // === Errors ===
 /// Error code when there aren't enough reserves to extract elements
@@ -44,7 +41,7 @@ public(package) fun create_universe_element_source<T>(
     main_source: ID,
     refill_threshold: u64,
     mine_parameters: MineConfigurationParameters<T>,
-    ctx: &mut TxContext
+    ctx: &mut TxContext,
 ): UniverseElementSource<T> {
     UniverseElementSource<T> {
         id: object::new(ctx),
@@ -52,7 +49,7 @@ public(package) fun create_universe_element_source<T>(
         main_source,
         refill_threshold,
         mine_parameters,
-        reserves: balance::zero<T>()
+        reserves: balance::zero<T>(),
     }
 }
 
@@ -73,7 +70,9 @@ public(package) fun refill_threshold<T>(self: &UniverseElementSource<T>): u64 {
 }
 
 /// Returns the mine parameters for this source
-public(package) fun mines_parameters<T>(self: &UniverseElementSource<T>): MineConfigurationParameters<T> {
+public(package) fun mines_parameters<T>(
+    self: &UniverseElementSource<T>,
+): MineConfigurationParameters<T> {
     self.mine_parameters
 }
 
@@ -90,8 +89,8 @@ public(package) fun set_refill_threshold<T>(self: &mut UniverseElementSource<T>,
 
 /// Updates the mine parameters for this source
 public(package) fun update_mines_parameters<T>(
-    self: &mut UniverseElementSource<T>, 
-    parameters: MineConfigurationParameters<T>
+    self: &mut UniverseElementSource<T>,
+    parameters: MineConfigurationParameters<T>,
 ) {
     self.mine_parameters = parameters;
 }
@@ -102,7 +101,7 @@ public(package) fun extract<T>(self: &mut UniverseElementSource<T>, amount: u64)
     let extraction = self.reserves.split(amount);
     if (self.reserves.value() < self.refill_threshold) {
         event::emit(UniverseElementSourceLowReserves {
-            id: object::id(self)
+            id: object::id(self),
         });
     };
     extraction
@@ -122,7 +121,7 @@ public(package) fun return_reserves<T>(self: &mut UniverseElementSource<T>, erb:
 /// Event emitted when a source's reserves are running low
 public struct UniverseElementSourceLowReserves has copy, drop {
     /// ID of the source with low reserves
-    id: ID
+    id: ID,
 }
 
 // === Method Aliases ===

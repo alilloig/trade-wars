@@ -6,8 +6,7 @@
 /// for upgrading facilities and other game mechanics.
 module trade_wars::erbium;
 
-// === Imports ===
-use sui::coin::{Self};
+use sui::coin;
 use sui::url;
 
 // === Errors ===
@@ -22,7 +21,7 @@ public struct ERB has copy, drop, store {}
 
 /// Returns the erbium witness
 public(package) fun get_erbium_witness(): ERB {
-    ERB{}
+    ERB {}
 }
 
 // === Method Aliases ===
@@ -39,8 +38,10 @@ fun init(witness: ERBIUM, ctx: &mut TxContext) {
         b"ERB",
         b"Erbium",
         b"Erbium, one of the rare-earth elements of Trade Wars",
-        option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/erbium.png")),
-        ctx
+        option::some<url::Url>(
+            url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/erbium.png"),
+        ),
+        ctx,
     );
     // Freeze Erbium metadata
     transfer::public_freeze_object(metadata);

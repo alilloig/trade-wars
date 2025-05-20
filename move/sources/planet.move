@@ -5,16 +5,14 @@
 /// Planets are the primary resource-generating assets that players control.
 module trade_wars::planet;
 
-// === Imports ===
-// trade_wars::
-use trade_wars::universe_element_source::{UniverseElementSource};
-use trade_wars::element_mine::{Self, ElementMine};
-use trade_wars::erbium::{ERBIUM};
-use trade_wars::lanthanum::{LANTHANUM};
-use trade_wars::thorium::{THORIUM};
-// sui::
-use sui::clock::Clock;
 use sui::balance::{Self, Balance};
+use sui::clock::Clock;
+use trade_wars::element_mine::{Self, ElementMine};
+use trade_wars::erbium::ERBIUM;
+use trade_wars::lanthanum::LANTHANUM;
+use trade_wars::thorium::THORIUM;
+use trade_wars::universe_element_source::UniverseElementSource;
+
 // === Errors ===
 /// Error code when an operation is attempted by someone who is not the planet's overseer
 const ENotPlanetOverseer: u64 = 0;
@@ -34,7 +32,7 @@ public struct PlanetCapability has store {
 /// Creates a new PlanetCapability for the given planet ID
 fun create_planet_capability(planet: ID): PlanetCapability {
     PlanetCapability {
-        planet
+        planet,
     }
 }
 
@@ -45,7 +43,7 @@ public(package) fun planet(self: &PlanetCapability): ID {
 
 // ::PlanetInfo
 /// Information about a planet's location in the universe
-public struct PlanetInfo has store, copy, drop {
+public struct PlanetInfo has copy, drop, store {
     /// Galaxy coordinate
     galaxy: u8,
     /// System coordinate within the galaxy
@@ -57,7 +55,7 @@ public struct PlanetInfo has store, copy, drop {
 // === ::PlanetInfo Package Functions ===
 /// Creates a new PlanetInfo with the given coordinates
 public(package) fun create_planet_info(galaxy: u8, system: u8, position: u8): PlanetInfo {
-    PlanetInfo { galaxy, system, position}
+    PlanetInfo { galaxy, system, position }
 }
 
 // === ::PlanetInfo Public Functions ===
@@ -66,7 +64,7 @@ public(package) fun create_planet_info(galaxy: u8, system: u8, position: u8): Pl
 public fun calculate_travel_distance(self: &PlanetInfo, destination: &PlanetInfo): u64 {
     let distance = 0;
     distance
-}   
+}
 
 // === ::Planet ===
 /// A planet with a mine that produces a specific element type
@@ -86,7 +84,11 @@ public struct Planet<phantom T> has key {
 
 // === ::Planet Private Functions ===
 /// Creates a new Planet and shares it, returning a capability to control it
-public(package) fun create_and_share_planet<T>(info: PlanetInfo, source: &UniverseElementSource<T>, ctx: &mut TxContext): PlanetCapability {
+public(package) fun create_and_share_planet<T>(
+    info: PlanetInfo,
+    source: &UniverseElementSource<T>,
+    ctx: &mut TxContext,
+): PlanetCapability {
     let planet = Planet<T> {
         id: object::new(ctx),
         info: info,
@@ -107,50 +109,44 @@ fun check_overseer_authority<T>(self: &Planet<T>, cap: &PlanetCapability): bool 
 
 /// Extracts erbium from an erbium planet's mine
 public(package) fun extract_erbium(
-    self: &mut Planet<ERBIUM>, 
-    cap: &PlanetCapability, 
-    source: &mut UniverseElementSource<ERBIUM>, 
-    c: &Clock
+    self: &mut Planet<ERBIUM>,
+    cap: &PlanetCapability,
+    source: &mut UniverseElementSource<ERBIUM>,
+    c: &Clock,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    self.erbium_store.join<ERBIUM>(
-        self.mine.extract<ERBIUM>(source, c.timestamp_ms())
-    );
+    self.erbium_store.join<ERBIUM>(self.mine.extract<ERBIUM>(source, c.timestamp_ms()));
 }
 
 /// Extracts lanthanum from a lanthanum planet's mine
 public(package) fun extract_lanthanum(
-    self: &mut Planet<LANTHANUM>, 
-    cap: &PlanetCapability, 
-    source: &mut UniverseElementSource<LANTHANUM>, 
-    c: &Clock
+    self: &mut Planet<LANTHANUM>,
+    cap: &PlanetCapability,
+    source: &mut UniverseElementSource<LANTHANUM>,
+    c: &Clock,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    self.lanthanum_store.join<LANTHANUM>(
-        self.mine.extract<LANTHANUM>(source, c.timestamp_ms())
-    );
+    self.lanthanum_store.join<LANTHANUM>(self.mine.extract<LANTHANUM>(source, c.timestamp_ms()));
 }
 
 /// Extracts thorium from a thorium planet's mine
 public(package) fun extract_thorium(
-    self: &mut Planet<THORIUM>, 
-    cap: &PlanetCapability, 
-    source: &mut UniverseElementSource<THORIUM>, 
-    c: &Clock
-) { 
+    self: &mut Planet<THORIUM>,
+    cap: &PlanetCapability,
+    source: &mut UniverseElementSource<THORIUM>,
+    c: &Clock,
+) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    self.thorium_store.join<THORIUM>(
-        self.mine.extract<THORIUM>(source, c.timestamp_ms())
-    );
+    self.thorium_store.join<THORIUM>(self.mine.extract<THORIUM>(source, c.timestamp_ms()));
 }
 
 /// Upgrades a planet's mine to increase its production
 public(package) fun upgrade_mine<T>(
-    self: &mut Planet<T>, 
+    self: &mut Planet<T>,
     cap: &PlanetCapability,
     erb_source: &mut UniverseElementSource<ERBIUM>,
     lan_source: &mut UniverseElementSource<LANTHANUM>,
-    tho_source: &mut UniverseElementSource<THORIUM>
+    tho_source: &mut UniverseElementSource<THORIUM>,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
     let erb = self.erbium_store.split<ERBIUM>(self.mine.get_upgrade_erbium_cost());
