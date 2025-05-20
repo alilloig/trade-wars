@@ -7,11 +7,11 @@ module trade_wars::universe;
 
 // === Imports ===
 // trade_wars::
-use trade_wars::erbium::{Self, ERBIUM};
-use trade_wars::lanthanum::{Self, LANTHANUM};
-use trade_wars::thorium::{Self, THORIUM};
+use trade_wars::erbium::{ERBIUM};
+use trade_wars::lanthanum::{LANTHANUM};
+use trade_wars::thorium::{THORIUM};
 use trade_wars::planet::{Self, PlanetInfo, PlanetCapability, create_planet_info};
-use trade_wars::universe_element_source::{Self, UniverseElementSource};
+use trade_wars::universe_element_source::{UniverseElementSource};
 // sui::
 use sui::event::{Self};
 use sui::display::{Self, Display};
@@ -252,6 +252,7 @@ public(package) fun get_universe_display(publisher: &Publisher, ctx: &mut TxCont
         b"{info.name}".to_string(),
         b"{info.galaxies}".to_string(),
         b"{info.systems}".to_string(),
+        b"{info.planets}".to_string(),
         b"{info.open}".to_string(),
     ];
     display::new_with_fields<Universe>(
