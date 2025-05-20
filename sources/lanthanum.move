@@ -11,12 +11,13 @@ use sui::url;
 // === Constants ===
 
 // === Structs ===
-// ::ERBIUM otw
+/// One-time witness for the LANTHANUM module
 public struct LANTHANUM has drop {}
 
-// ::ERB witness
+/// Witness type for lanthanum operations
 public struct LAN has copy, drop, store {}
 
+/// Returns the lanthanum witness
 public(package) fun get_lanthanum_witness(): LAN {
     LAN{}
 }
@@ -26,6 +27,7 @@ public(package) fun get_lanthanum_witness(): LAN {
 // === View Functions ===
 
 // === Admin Functions ===
+/// Initializes the Lanthanum currency
 fun init(witness: LANTHANUM, ctx: &mut TxContext) {
     // Create the Erbium currency, store the treasury capability and share the element mine
     let (treasury, metadata) = coin::create_currency<LANTHANUM>(

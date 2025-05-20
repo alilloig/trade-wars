@@ -19,12 +19,13 @@ const EUniverseNotOpen: u64 = 1;
 // === Constants ===
 
 // === Structs ===
-// ::Overseer
+/// Represents a player in the game who can control planets and build their empire
 public struct Overseer has key {
     id: UID,
     empire: Table<ID, vector<PlanetCapability>>
 }
 
+/// Creates a new Overseer object
 fun new_overseer(ctx: &mut TxContext): Overseer {
     Overseer {
         id: object::new(ctx),
@@ -32,11 +33,11 @@ fun new_overseer(ctx: &mut TxContext): Overseer {
     }
 }
 
-// this method will request to join a certain universe
-// Player signed PTB
-// Get a &mut to shared Universe. Previously a PTB for retrieving opened universes from TradeWarsInfo and their displays needs to be done for giving players a list of available universes
-// Get a &mut to address owned Overseer
-// MakeMoveCall tradewars.join_universe(overseer)
+/// Allows an overseer to join a universe and be assigned a random planet
+/// Player signed PTB
+/// Get a &mut to shared Universe. Previously a PTB for retrieving opened universes from TradeWarsInfo and their displays needs to be done for giving players a list of available universes
+/// Get a &mut to address owned Overseer
+/// MakeMoveCall tradewars.join_universe(overseer)
 entry fun join_universe(self: &mut Overseer, universe: &mut Universe, erb_source: &UniverseElementSource<ERBIUM>, lan_source: &UniverseElementSource<LANTHANUM>, tho_source: &UniverseElementSource<THORIUM>, r: &Random, ctx: &mut TxContext) {
     assert!(!self.has_joined_universe(object::id(universe)), EOverseerAlreadyJoinedUniverse);
     assert!(universe.get_info().open(), EUniverseNotOpen);
@@ -53,7 +54,7 @@ entry fun join_universe(self: &mut Overseer, universe: &mut Universe, erb_source
     );
 }
 
-/// Overseer cannot request to join universe twice
+/// Checks if the overseer has already joined a specific universe
 fun has_joined_universe(self: &Overseer, universe: ID): bool {
     return self.empire.contains(universe)
 }
@@ -63,6 +64,7 @@ fun has_joined_universe(self: &Overseer, universe: ID): bool {
 // === Method Aliases ===
 
 // === Public Functions ===
+/// Creates and transfers a new Overseer object to the transaction sender
 entry fun vest_overseer(ctx: &mut TxContext) {
     transfer::transfer(new_overseer(ctx), ctx.sender())
 }

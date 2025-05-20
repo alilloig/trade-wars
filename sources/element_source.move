@@ -31,6 +31,7 @@ public struct ElementSource<phantom T> has key, store {
 }
 
 // === ::ElementSource Package Functions ===
+/// Creates a new ElementSource with the provided treasury and mine parameters
 public(package) fun create_source<T>(
     treasury: TreasuryCap<T>,
     mine_parameters: MineConfigurationParameters<T>,
@@ -46,27 +47,33 @@ public(package) fun create_source<T>(
 }
 
 // === ::ElementSource Package Getter Functions ===
+/// Returns the quantity used to refill universe sources
 public(package) fun get_sources_refill_qty<T>(self: &ElementSource<T>): u64 {
     self.sources_refill_qty
 }
 
+/// Returns the threshold at which universe sources should be refilled
 public(package) fun get_sources_refill_threshold<T>(self: &ElementSource<T>): u64 {
     self.sources_refill_threshold
 }
 
+/// Returns the mine parameters for this element type
 public(package) fun get_mine_parameters<T>(self: &ElementSource<T>): MineConfigurationParameters<T> {
     self.mine_parameters
 }
 
 // === ::ElementSource Package Setter Functions ===
+/// Sets the quantity used to refill universe sources
 public(package) fun set_sources_refill_qty<T>(self: &mut ElementSource<T>, qty: u64) {
     self.sources_refill_qty = qty;
 }   
 
+/// Sets the threshold at which universe sources should be refilled
 public(package) fun set_sources_refill_threshold<T>(self: &mut ElementSource<T>, threshold: u64) {
     self.sources_refill_threshold = threshold;
 }
 
+/// Updates the mine parameters for this element type
 public(package) fun set_mine_parameters<T>(
     self: &mut ElementSource<T>, 
     parameters: MineConfigurationParameters<T>
@@ -75,7 +82,7 @@ public(package) fun set_mine_parameters<T>(
 }
 
 // === ::ElementSource Entry Functions ===
-// Any universe admin can call this to refill its source if it's below the threshold
+/// Any universe admin can call this to refill its source if it's below the threshold
 entry fun refill_universe_source<T>(
     self: &mut ElementSource<T>, 
     universe_source: &mut UniverseElementSource<T>, 
@@ -100,6 +107,7 @@ entry fun refill_universe_source<T>(
 // === Package Functions ===
 
 // === Private Functions ===
+/// Mints new tokens of the element type
 fun mint_balance<T>(
     self: &mut ElementSource<T>,
     amount: u64

@@ -11,7 +11,8 @@ use sui::balance::{Balance};
 // === Constants ===
 
 // === Structs ===
-// ::TradePort
+/// Represents a trading port where players can exchange different elements
+/// with specific exchange rates
 public struct TradePort<T,K> has store {
     offer_element: T,
     ask_element: K,

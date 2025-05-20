@@ -11,12 +11,13 @@ use sui::url;
 // === Constants ===
 
 // === Structs ===
-// ::THORIUM otw
+/// One-time witness for the THORIUM module
 public struct THORIUM has drop {}
 
-// ::THR witness
+/// Witness type for thorium operations
 public struct THO has copy, drop, store {}
 
+/// Returns the thorium witness
 public(package) fun get_thorium_witness(): THO {
     THO{}
 }
@@ -26,6 +27,7 @@ public(package) fun get_thorium_witness(): THO {
 // === View Functions ===
 
 // === Admin Functions ===
+/// Initializes the Thorium currency
 fun init(witness: THORIUM, ctx: &mut TxContext) {
     // Create the Erbium currency, store the treasury capability and share the element mine
     let (treasury, metadata) = coin::create_currency<THORIUM>(

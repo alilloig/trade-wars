@@ -1,6 +1,9 @@
 // Copyright (c) Contract Hero
 // SPDX-License-Identifier: GPL-3.0-only
 
+/// Module for the Erbium resource, one of the three primary elements in Trade Wars.
+/// Erbium is implemented as a fungible token that can be mined, traded, and used
+/// for upgrading facilities and other game mechanics.
 module trade_wars::erbium;
 
 // === Imports ===
@@ -11,12 +14,13 @@ use sui::url;
 // === Constants ===
 
 // === Structs ===
-// ::ERBIUM otw
+/// One-time witness for the ERBIUM module
 public struct ERBIUM has drop {}
 
-// ::ERB witness
+/// Witness type for erbium operations
 public struct ERB has copy, drop, store {}
 
+/// Returns the erbium witness
 public(package) fun get_erbium_witness(): ERB {
     ERB{}
 }
@@ -26,6 +30,7 @@ public(package) fun get_erbium_witness(): ERB {
 // === View Functions ===
 
 // === Admin Functions ===
+/// Initializes the Erbium currency
 fun init(witness: ERBIUM, ctx: &mut TxContext) {
     // Create the Erbium currency, store the treasury capability and share the element mine
     let (treasury, metadata) = coin::create_currency<ERBIUM>(
