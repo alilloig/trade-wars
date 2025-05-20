@@ -1,0 +1,15 @@
+{
+  "name": "cli",
+  "devDependencies": {
+    "@mysten/sui": "^1.29.1",
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0"
+  },
+  "bin": {
+    "trade-wars": "./index.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^16.5.0"
+  }
+}

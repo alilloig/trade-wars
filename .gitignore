@@ -1,3 +1,5 @@
 move/build/
 move/Move.lock
 web/node_modules/
+cli/node_modules/
+cli/.env
