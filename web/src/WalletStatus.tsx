@@ -2,7 +2,11 @@ import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { OwnedObjects } from "./OwnedObjects";
 
-export function WalletStatus() {
+interface WalletStatusProps {
+  onSelectObject?: (id: string) => void;
+}
+
+export function WalletStatus({ onSelectObject }: WalletStatusProps) {
   const account = useCurrentAccount();
 
   return (
@@ -17,7 +21,7 @@ export function WalletStatus() {
       ) : (
         <Text>Wallet not connected</Text>
       )}
-      <OwnedObjects />
+      <OwnedObjects onSelectObject={onSelectObject} />
     </Container>
   );
 }
