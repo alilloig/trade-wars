@@ -1,0 +1,48 @@
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { Container, Flex, Heading, Text } from "@radix-ui/themes";
+import { OwnedObjects } from "./OwnedObjects";
+
+interface WalletStatusProps {
+  onSelectObject?: (id: string) => void;
+}
+
+export function WalletStatus({ onSelectObject }: WalletStatusProps) {
+  const account = useCurrentAccount();
+
+  return (
+    <Container my="2">
+      {account ? (
+        <>
+          <Heading mb="2">Wallet Status</Heading>
+          <Flex direction="column">
+            <Text>Wallet connected</Text>
+            <Text>Address: {account.address}</Text>
+          </Flex>
+          <OwnedObjects onSelectObject={onSelectObject} />
+        </>
+      ) : (
+        <>
+          <Heading mb="2" size="5">
+            Trade Wars is the fully on-chain, massively multiplayer, interplanetary trading game set in a post-apocalyptic future — produce, trade, and expand your reach among the stars.
+          </Heading>
+          <Text size="3" weight="bold" mb="2">
+            Connect your wallet to start playing
+          </Text>
+          <img 
+            src="/cargo_ship.png" 
+            alt="Cargo Ship" 
+            style={{ 
+              maxWidth: '300px', 
+              width: '60%', 
+              height: 'auto', 
+              marginTop: '1rem',
+              display: 'block',
+              marginLeft: 'auto',
+              marginRight: 'auto'
+            }} 
+          />
+        </>
+      )}
+    </Container>
+  );
+}
