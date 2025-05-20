@@ -5,17 +5,14 @@ module trade_wars::planet;
 
 // === Imports ===
 // trade_wars::
-use trade_wars::universe_element_source::{Self, UniverseElementSource};
-use trade_wars::element_store::{Self, ElementStore};
+use trade_wars::universe_element_source::{UniverseElementSource};
 use trade_wars::element_mine::{Self, ElementMine};
-use trade_wars::erbium::{Self, ERBIUM};
-//use trade_wars::lanthanum::{Self, LANTHANUM};
-//use trade_wars::thorium::{Self, THORIUM};
+use trade_wars::erbium::{ERBIUM};
+use trade_wars::lanthanum::{LANTHANUM};
+use trade_wars::thorium::{THORIUM};
 // sui::
-use sui::balance::{Self, Balance};
-use sui::random::RandomGenerator;
 use sui::clock::Clock;
-
+use sui::balance::{Self, Balance};
 // === Errors ===
 const ENotPlanetOverseer: u64 = 0;
 //const ENotExpectedElement: u64 = 0;
@@ -24,22 +21,39 @@ const ENotPlanetOverseer: u64 = 0;
 // === Constants ===
 
 // === Structs ===
+// === ::PlanetCapability ===
+// Identifies overseer as owner of planet and allows operations over it
+public struct PlanetCapability has store {
+    planet: ID,
+}
+
+fun create_planet_capability(planet: ID): PlanetCapability {
+    PlanetCapability {
+        planet
+    }
+}
+
+public(package) fun planet(self: &PlanetCapability): ID {
+    self.planet
+}
+
 // ::PlanetInfo
 public struct PlanetInfo has store, copy, drop {
-    galaxy: u64,
-    system: u64,
-    position: u64,
+    galaxy: u8,
+    system: u8,
+    position: u8,
 }
 
 // === ::PlanetInfo Package Functions ===
-public(package) fun create_planet_info(galaxy: u64, system: u64, position: u64): PlanetInfo {
+public(package) fun create_planet_info(galaxy: u8, system: u8, position: u8): PlanetInfo {
     PlanetInfo { galaxy, system, position}
 }
 
 // === ::PlanetInfo Public Functions ===
+// TO-DO: Implement this
 public fun calculate_travel_distance(self: &PlanetInfo, destination: &PlanetInfo): u64 {
-    // lol came up with how to calculate travel costs
-    1
+    let distance = 0;
+    distance
 }   
 
 // === ::Planet ===
@@ -47,30 +61,35 @@ public struct Planet<phantom T> has key {
     id: UID,
     info: PlanetInfo,
     mine: ElementMine<T>,
-    erbium_store: ElementStore<ERBIUM>,
-    //lanthanum_store: ElementStore<LANTHANUM>,
-    //thorium_store: ElementStore<THORIUM>,
+    erbium_store: Balance<ERBIUM>,
+    lanthanum_store: Balance<LANTHANUM>,
+    thorium_store: Balance<THORIUM>,
 }
 
 // === ::Planet Private Functions ===
-fun create_planet<T>(info: PlanetInfo, source: ID, ctx: &mut TxContext): Planet<T> {
-    Planet {
+public(package) fun create_and_share_planet<T>(info: PlanetInfo, source: &UniverseElementSource<T>, ctx: &mut TxContext): PlanetCapability {
+    let planet = Planet<T> {
         id: object::new(ctx),
         info: info,
-        mine: element_mine::create_mine<T>(source, 100),
-        erbium_store: element_store::create_store<ERBIUM>(),
-        //lanthanum_store: element_store::create_store<LANTHANUM>(),
-        //thorium_store: element_store::create_store<THORIUM>(),
-    }
+        mine: element_mine::create_mine<T>(source),
+        erbium_store: balance::zero<ERBIUM>(),
+        lanthanum_store: balance::zero<LANTHANUM>(),
+        thorium_store: balance::zero<THORIUM>(),
+    };
+    let cap = create_planet_capability(object::id(&planet));
+    transfer::share_object(planet);
+    cap
 }
 
 // Helper method to call on assert on authorized Planet operations
 fun check_overseer_authority<T>(self: &Planet<T>, cap: &PlanetCapability): bool {
-    object::id_address(self) == cap.direction
+    object::id(self) == cap.planet
 }
 
+// esto hay que llamarlo desde el overseer para hacer una funcion entry que no se enfade xk 
+// le estoy pasando la capability del planeta, que no tiene key, y sin key no puedes meter en las entrys
 // === ::Planet Entry Functions ===
-entry fun extract_erbium(
+public(package) fun extract_erbium(
     self: &mut Planet<ERBIUM>, 
     cap: &PlanetCapability, 
     source: &mut UniverseElementSource<ERBIUM>, 
@@ -82,33 +101,42 @@ entry fun extract_erbium(
     );
 }
 
-entry fun upgrade_mine<T>(
+public(package) fun extract_lanthanum(
+    self: &mut Planet<LANTHANUM>, 
+    cap: &PlanetCapability, 
+    source: &mut UniverseElementSource<LANTHANUM>, 
+    c: &Clock
+) {
+    assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
+    self.lanthanum_store.join<LANTHANUM>(
+        self.mine.extract<LANTHANUM>(source, c.timestamp_ms())
+    );
+}
+
+public(package) fun extract_thorium(
+    self: &mut Planet<THORIUM>, 
+    cap: &PlanetCapability, 
+    source: &mut UniverseElementSource<THORIUM>, 
+    c: &Clock
+) { 
+    assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
+    self.thorium_store.join<THORIUM>(
+        self.mine.extract<THORIUM>(source, c.timestamp_ms())
+    );
+}
+
+public(package) fun upgrade_mine<T>(
     self: &mut Planet<T>, 
     cap: &PlanetCapability,
     erb_source: &mut UniverseElementSource<ERBIUM>,
+    lan_source: &mut UniverseElementSource<LANTHANUM>,
+    tho_source: &mut UniverseElementSource<THORIUM>
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
     let erb = self.erbium_store.split<ERBIUM>(self.mine.get_upgrade_erbium_cost());
-    self.mine.upgrade_mine(erb_source, erb);
-}
-
-// === ::PlanetCapability ===
-// Identifies overseer as owner of planet and allows operations over it
-public struct PlanetCapability has key, store {
-    id: UID,
-    direction: address,
-}
-
-// === ::PlanetCapability Private Functions ===
-fun create_planet_capability(addr: address, ctx: &mut TxContext): PlanetCapability {
-    PlanetCapability {
-        id: object::new(ctx),
-        direction: addr 
-    }
-}
-
-fun get_direction(self: &PlanetCapability): address {
-    self.direction
+    let lan = self.lanthanum_store.split<LANTHANUM>(self.mine.get_upgrade_lanthanum_cost());
+    let tho = self.thorium_store.split<THORIUM>(self.mine.get_upgrade_thorium_cost());
+    self.mine.upgrade_mine(erb_source, erb, lan_source, lan, tho_source, tho);
 }
 
 // === Events ===
@@ -126,19 +154,5 @@ fun get_direction(self: &PlanetCapability): address {
 }*/
 
 // === Private Functions ===
-// Medio aleatoriamente hay que determinar donde se encuentra el planeta y actualizarlo como ocupado POR ESO ESTABA EN UNIVERSE ANORMAL
-// necesitamos mut Universe para actualizar el nuevo planeta
-fun generate_random_planet(randomizer: &mut RandomGenerator): PlanetInfo {
-    let random_element = randomizer.generate_u64_in_range(1, 3);
-    let mut planet_info: Option<PlanetInfo> = option::none();
-    if (random_element == 1 ) {
-        planet_info.fill(create_planet_info(1, 1, 1));
-    } else if (random_element == 2 ) {
-        planet_info.fill(create_planet_info(1, 1, 1));
-    } else if (random_element == 3 ) {
-        planet_info.fill(create_planet_info(1, 1, 1));
-    };
-    planet_info.destroy_some()
-}
 
 // === Test Functions ===

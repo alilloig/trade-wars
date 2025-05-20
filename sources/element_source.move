@@ -5,16 +5,12 @@ module trade_wars::element_source;
 
 // === Imports ===
 // sui::
-use sui::event::{Self};
-use sui::balance::{Self, Balance};
-use sui::coin::{Self, Coin, TreasuryCap};
+use sui::balance::{Balance};
+use sui::coin::{TreasuryCap};
 // trade_wars::
 use trade_wars::universe_element_source::{UniverseElementSource};
 use trade_wars::universe::{UniverseCreatorCapability};
-use trade_wars::mine_configuration_parameters::{Self, MineConfigurationParameters};
-use trade_wars::erbium::{ERBIUM};
-//use trade_wars::lanthanum::{LANTHANUM};
-//use trade_wars::thorium::{THORIUM};
+use trade_wars::mine_configuration_parameters::{MineConfigurationParameters};
 
 // === Errors ===
 const EUnnecessaryRefill: u64 = 4;

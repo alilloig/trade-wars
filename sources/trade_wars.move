@@ -10,14 +10,13 @@ use trade_wars::universe::{
                             Universe, 
                             UniverseInfo, 
                             UniverseCreatorCapability,
-                            //UniverseElementSource
                           };
 use trade_wars::element_source::{Self, ElementSource};
-use trade_wars::universe_element_source::{Self, UniverseElementSource};
-use trade_wars::mine_configuration_parameters::{Self, MineConfigurationParameters};
+use trade_wars::universe_element_source::{Self};
+use trade_wars::mine_configuration_parameters::{Self};
 use trade_wars::erbium::{ERBIUM};
-//use trade_wars::lanthanum::{Self, LANTHANUM};
-//use trade_wars::thorium::{Self, THORIUM};
+use trade_wars::lanthanum::{LANTHANUM};
+use trade_wars::thorium::{THORIUM};
 // sui::
 use sui::package::{Self};
 use sui::event::{Self};
@@ -25,7 +24,7 @@ use sui::vec_map::{Self, VecMap};
 use sui::clock::Clock;
 use std::string::{String};
 use sui::balance::{Self, Balance};
-use sui::coin::{Self, Coin, TreasuryCap};
+use sui::coin::{Coin, TreasuryCap};
 use sui::sui::{SUI};
 
 // === Errors ===
@@ -34,10 +33,19 @@ const EOpeningOpenUniverse: u64 = 1;
 const EClosingClosedUniverse: u64 = 2;
 const ENotUniverseCreator: u64 = 3;
 
-
 // === Constants ===
 const InitialErbiumMinesProductionFactor: u64 = 2;
-const InitialErbiumMinesErbiumUpgradeCost: u64 = 1000000;
+const InitialErbiumMinesErbiumUpgradeCost: u64 = 10;
+const InitialErbiumMinesLanthanumUpgradeCost: u64 = 5;
+const InitialErbiumMinesThoriumUpgradeCost: u64 = 5;
+const InitialLanthanumMinesProductionFactor: u64 = 2;
+const InitialLanthanumMinesErbiumUpgradeCost: u64 = 5;
+const InitialLanthanumMinesLanthanumUpgradeCost: u64 = 10;
+const InitialLanthanumMinesThoriumUpgradeCost: u64 = 5;
+const InitialThoriumMinesProductionFactor: u64 = 2;
+const InitialThoriumMinesErbiumUpgradeCost: u64 = 5;
+const InitialThoriumMinesLanthanumUpgradeCost: u64 = 5;
+const InitialThoriumMinesThoriumUpgradeCost: u64 = 10;
 
 // === Structs ===
 // ::TRADE_WARS otw
@@ -91,6 +99,8 @@ entry fun get_public_universe_creation(self: &TradeWarsPublicInfo): bool {
 public struct TradeWars has key {
     id: UID,
     erbium_source: Option<ID>,
+    lanthanum_source: Option<ID>,
+    thorium_source: Option<ID>,
     universes: VecMap<ID, UniverseInfo>,
     public_universe_creation: bool,
     universe_creation_price: u64,
@@ -103,6 +113,8 @@ fun new_game(_cap: &GameAdminCapability, ctx: &mut TxContext): TradeWars {
     TradeWars {
         id: object::new(ctx),
         erbium_source: option::none(),
+        lanthanum_source: option::none(),
+        thorium_source: option::none(),
         universes: vec_map::empty(),
         public_universe_creation: false,
         universe_creation_price: 0,
@@ -118,14 +130,18 @@ entry fun create_element_sources(
     self: &mut TradeWars, 
     _cap: &GameAdminCapability, 
     erb_treasury: TreasuryCap<ERBIUM>, 
+    lan_treasury: TreasuryCap<LANTHANUM>,
+    tho_treasury: TreasuryCap<THORIUM>,
     ctx: &mut TxContext
 ) {
-    // Create the element source
+    // Create the erbium source
     let erb_source = element_source::create_source<ERBIUM>(
         erb_treasury, 
         mine_configuration_parameters::create_mine_configuration_parameters<ERBIUM>(
             InitialErbiumMinesProductionFactor,
-            InitialErbiumMinesErbiumUpgradeCost
+            InitialErbiumMinesErbiumUpgradeCost,
+            InitialErbiumMinesLanthanumUpgradeCost,
+            InitialErbiumMinesThoriumUpgradeCost
         ),
         ctx
     );
@@ -133,8 +149,36 @@ entry fun create_element_sources(
     self.erbium_source.fill(object::id(&erb_source));
     // Share the element source
     transfer::public_share_object(erb_source);
-    //self.elements_sources.add(lanthanum::get_lanthanum_witness(), lan);
-    //self.elements_sources.add(thorium::get_thorium_witness(), tho);
+    // Create the lanthanum source
+    let lan_source = element_source::create_source<LANTHANUM>(
+        lan_treasury, 
+        mine_configuration_parameters::create_mine_configuration_parameters<LANTHANUM>(
+            InitialLanthanumMinesProductionFactor,
+            InitialLanthanumMinesErbiumUpgradeCost,
+            InitialLanthanumMinesLanthanumUpgradeCost,
+            InitialLanthanumMinesThoriumUpgradeCost
+        ),
+        ctx
+    );
+    // Store the element source ID in the core game object
+    self.lanthanum_source.fill(object::id(&lan_source));
+    // Share the element source
+    transfer::public_share_object(lan_source);
+    // Create the thorium source
+    let tho_source = element_source::create_source<THORIUM>(
+        tho_treasury,
+        mine_configuration_parameters::create_mine_configuration_parameters<THORIUM>(
+            InitialThoriumMinesProductionFactor,
+            InitialThoriumMinesErbiumUpgradeCost,
+            InitialThoriumMinesLanthanumUpgradeCost,
+            InitialThoriumMinesThoriumUpgradeCost
+        ),
+        ctx
+    );
+    // Store the element source ID in the core game object
+    self.thorium_source.fill(object::id(&tho_source));
+    // Share the element source
+    transfer::public_share_object(tho_source);
 }
 
 /// Anyone can call this to start their own universe of the game by paying a fee
@@ -231,13 +275,17 @@ entry fun set_erbium_mines_production<ERBIUM>(
     self: &mut ElementSource<ERBIUM>, 
     _cap: &GameAdminCapability, 
     production: u64,
-    erb_upgrade_cost: u64
+    erb_upgrade_cost: u64,
+    lan_upgrade_cost: u64,
+    tho_upgrade_cost: u64
 ) {
     element_source::set_mine_parameters(
         self, 
         mine_configuration_parameters::create_mine_configuration_parameters<ERBIUM>(
             production, 
-            erb_upgrade_cost
+            erb_upgrade_cost,
+            lan_upgrade_cost,
+            tho_upgrade_cost
         )
     );
 }
@@ -252,6 +300,74 @@ entry fun set_erbium_mines_refill_qty<ERBIUM>(
 
 entry fun set_erbium_mines_refill_threshold<ERBIUM>(
     self: &mut ElementSource<ERBIUM>, 
+    _cap: &GameAdminCapability, 
+    refill_threshold: u64
+) {
+    element_source::set_sources_refill_threshold(self, refill_threshold);
+}
+
+entry fun set_lanthanum_mines_production<LANTHANUM>(
+    self: &mut ElementSource<LANTHANUM>, 
+    _cap: &GameAdminCapability, 
+    production: u64,
+    lan_upgrade_cost: u64,
+    tho_upgrade_cost: u64
+) {
+    element_source::set_mine_parameters(
+        self, 
+        mine_configuration_parameters::create_mine_configuration_parameters<LANTHANUM>(
+            production, 
+            lan_upgrade_cost, 
+            lan_upgrade_cost, 
+            tho_upgrade_cost    
+        )
+    );
+}
+
+entry fun set_lanthanum_mines_refill_qty<LANTHANUM>(
+    self: &mut ElementSource<LANTHANUM>, 
+    _cap: &GameAdminCapability, 
+    refill_qty: u64
+) {
+    element_source::set_sources_refill_qty(self, refill_qty);
+}
+
+entry fun set_lanthanum_mines_refill_threshold<LANTHANUM>(
+    self: &mut ElementSource<LANTHANUM>, 
+    _cap: &GameAdminCapability, 
+    refill_threshold: u64
+) {
+    element_source::set_sources_refill_threshold(self, refill_threshold);
+}
+
+entry fun set_thorium_mines_production<THORIUM>(
+    self: &mut ElementSource<THORIUM>, 
+    _cap: &GameAdminCapability, 
+    production: u64,
+    erb_upgrade_cost: u64,
+    lan_upgrade_cost: u64
+) { 
+    element_source::set_mine_parameters(
+        self, 
+        mine_configuration_parameters::create_mine_configuration_parameters<THORIUM>(
+            production, 
+            erb_upgrade_cost, 
+            lan_upgrade_cost, 
+            lan_upgrade_cost
+        )
+    );
+}
+
+entry fun set_thorium_mines_refill_qty<THORIUM>(
+    self: &mut ElementSource<THORIUM>, 
+    _cap: &GameAdminCapability, 
+    refill_qty: u64
+) {
+    element_source::set_sources_refill_qty(self, refill_qty);
+}
+
+entry fun set_thorium_mines_refill_threshold<THORIUM>(
+    self: &mut ElementSource<THORIUM>, 
     _cap: &GameAdminCapability, 
     refill_threshold: u64
 ) {

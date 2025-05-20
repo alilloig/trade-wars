@@ -11,13 +11,15 @@ module trade_wars::element_mine;
 // trade_wars::
 use trade_wars::universe_element_source::{UniverseElementSource};
 use trade_wars::erbium::{ERBIUM};
-//use trade_wars::lanthanum::{Self, LANTHANUM};
-//use trade_wars::thorium::{Self, THORIUM};
+use trade_wars::lanthanum::{LANTHANUM};
+use trade_wars::thorium::{THORIUM};
 // sui::
 use sui::balance::{Balance};
 
 // === Errors ===
 const ENotEnoughERBIUM: u64 = 0;
+const ENotEnoughLANTHANUM: u64 = 1;
+const ENotEnoughTHORIUM: u64 = 2;
 
 // === Constants ===
 const MillisecondsPerMinute: u64 = 60000;
@@ -29,18 +31,21 @@ public struct ElementMine<phantom T> has store {
     level: u64,
     last_extraction: u64,
     erbium_upgrade_cost: u64,
+    lanthanum_upgrade_cost: u64,
+    thorium_upgrade_cost: u64,
 }
 
 // === ::ElementMine Package Functions ===
 public(package) fun create_mine<T>(
-    source: ID, 
-    erbium_upgrade_cost: u64
+    source: &UniverseElementSource<T>
 ): ElementMine<T> {
     ElementMine {
-        source,
+        source: object::id(source),
         level: 1,
         last_extraction: 0,
-        erbium_upgrade_cost,
+        erbium_upgrade_cost: source.mines_parameters<T>().get_erbium_upgrade_cost(),
+        lanthanum_upgrade_cost: source.mines_parameters<T>().get_lanthanum_upgrade_cost(),
+        thorium_upgrade_cost: source.mines_parameters<T>().get_thorium_upgrade_cost(),
     }
 }
 
@@ -48,13 +53,29 @@ public(package) fun get_upgrade_erbium_cost<T>(self: &ElementMine<T>): u64 {
     self.erbium_upgrade_cost * self.level
 }
 
+public(package) fun get_upgrade_lanthanum_cost<T>(self: &ElementMine<T>): u64 {
+    self.lanthanum_upgrade_cost * self.level
+}
+
+public(package) fun get_upgrade_thorium_cost<T>(self: &ElementMine<T>): u64 {
+    self.thorium_upgrade_cost * self.level
+}
+
 public(package) fun upgrade_mine<T>(
     self: &mut ElementMine<T>, 
     erb_source: &mut UniverseElementSource<ERBIUM>,
-    erb: Balance<ERBIUM>
+    erb: Balance<ERBIUM>,
+    lan_source: &mut UniverseElementSource<LANTHANUM>,
+    lan: Balance<LANTHANUM>,
+    tho_source: &mut UniverseElementSource<THORIUM>,
+    tho: Balance<THORIUM>
 ) {
-    assert!(erb.value() >= self.erbium_upgrade_cost, ENotEnoughERBIUM);
+    assert!(erb.value() >= self.get_upgrade_erbium_cost(), ENotEnoughERBIUM);
+    assert!(lan.value() >= self.get_upgrade_lanthanum_cost(), ENotEnoughLANTHANUM);
+    assert!(tho.value() >= self.get_upgrade_thorium_cost(), ENotEnoughTHORIUM);
     erb_source.return_reserves<ERBIUM>(erb);
+    lan_source.return_reserves<LANTHANUM>(lan);
+    tho_source.return_reserves<THORIUM>(tho);
     self.level = self.level + 1;
 }
 

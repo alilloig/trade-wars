@@ -1,7 +1,7 @@
 // Copyright (c) Contract Hero
 // SPDX-License-Identifier: GPL-3.0-only
 
-module trade_wars::erbium;
+module trade_wars::lanthanum;
 
 // === Imports ===
 use sui::coin::{Self};
@@ -12,13 +12,13 @@ use sui::url;
 
 // === Structs ===
 // ::ERBIUM otw
-public struct ERBIUM has drop {}
+public struct LANTHANUM has drop {}
 
 // ::ERB witness
-public struct ERB has copy, drop, store {}
+public struct LAN has copy, drop, store {}
 
-public(package) fun get_erbium_witness(): ERB {
-    ERB{}
+public(package) fun get_lanthanum_witness(): LAN {
+    LAN{}
 }
 
 // === Method Aliases ===
@@ -26,20 +26,20 @@ public(package) fun get_erbium_witness(): ERB {
 // === View Functions ===
 
 // === Admin Functions ===
-fun init(witness: ERBIUM, ctx: &mut TxContext) {
+fun init(witness: LANTHANUM, ctx: &mut TxContext) {
     // Create the Erbium currency, store the treasury capability and share the element mine
-    let (treasury, metadata) = coin::create_currency<ERBIUM>(
+    let (treasury, metadata) = coin::create_currency<LANTHANUM>(
         witness,
         9,
-        b"ERB",
-        b"Erbium",
-        b"Erbium, one of the rare-earth elements of Trade Wars",
-        option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/erbium.png")),
+        b"LAN",
+        b"Lanthanum",
+        b"Lanthanum, one of the rare-earth elements of Trade Wars",
+        option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/lanthanum.png")),
         ctx
     );
-    // Freeze Erbium metadata
+    // Freeze Lanthanum metadata
     transfer::public_freeze_object(metadata);
-    // Transfer erbium treasury to module owner
+    // Transfer lanthanum treasury to module owner
     transfer::public_transfer(treasury, ctx.sender());
 }
 

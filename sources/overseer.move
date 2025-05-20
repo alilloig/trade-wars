@@ -5,13 +5,17 @@ module trade_wars::overseer;
 
 // === Imports ===
 use trade_wars::universe::{Self, Universe};
-use trade_wars::planet::{Self, PlanetInfo, PlanetCapability};
-use sui::random::{Self, Random, RandomGenerator};
+use trade_wars::universe_element_source::{UniverseElementSource};
+use trade_wars::planet::{PlanetCapability};
+use trade_wars::erbium::{ERBIUM};
+use trade_wars::lanthanum::{LANTHANUM};
+use trade_wars::thorium::{THORIUM};
+use sui::random::{Self, Random};
 use sui::table::{Self, Table};
 
 // === Errors ===
 const EOverseerAlreadyJoinedUniverse: u64 = 0;
-
+const EUniverseNotOpen: u64 = 1;
 // === Constants ===
 
 // === Structs ===
@@ -33,12 +37,20 @@ fun new_overseer(ctx: &mut TxContext): Overseer {
 // Get a &mut to shared Universe. Previously a PTB for retrieving opened universes from TradeWarsInfo and their displays needs to be done for giving players a list of available universes
 // Get a &mut to address owned Overseer
 // MakeMoveCall tradewars.join_universe(overseer)
-entry fun join_universe(self: &mut Overseer, universe: &mut Universe, r: &Random, ctx: &mut TxContext) {
-    let universe_id = object::id(universe);
-    assert!(!self.has_joined_universe(universe_id), EOverseerAlreadyJoinedUniverse);
-    let mut randomizer = random::new_generator(r, ctx);
-    self.empire.add(universe_id, vector::empty<PlanetCapability>());
-    self.empire[universe_id].push_back(planet::occupy_planet(info, ctx))
+entry fun join_universe(self: &mut Overseer, universe: &mut Universe, erb_source: &UniverseElementSource<ERBIUM>, lan_source: &UniverseElementSource<LANTHANUM>, tho_source: &UniverseElementSource<THORIUM>, r: &Random, ctx: &mut TxContext) {
+    assert!(!self.has_joined_universe(object::id(universe)), EOverseerAlreadyJoinedUniverse);
+    assert!(universe.get_info().open(), EUniverseNotOpen);
+    // add a new universe to the empire and save the planet capability in it
+    self.empire.add(object::id(universe), vector::empty<PlanetCapability>());
+    self.empire[object::id(universe)].push_back(
+        universe.occupy_planet(
+            erb_source, 
+            lan_source,
+            tho_source,
+            &mut r.new_generator(ctx), 
+            ctx
+        )
+    );
 }
 
 /// Overseer cannot request to join universe twice

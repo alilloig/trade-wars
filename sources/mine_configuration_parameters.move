@@ -14,22 +14,22 @@ module trade_wars::mine_configuration_parameters;
 public struct MineConfigurationParameters<phantom T> has store, copy, drop {
     production_factor: u64,
     erbium_upgrade_cost: u64,
-    //lanthanum_upgrade_cost: u64,
-    //thorium_upgrade_cost: u64,
+    lanthanum_upgrade_cost: u64,
+    thorium_upgrade_cost: u64,
 }
 
 // ::constructors
 public(package) fun create_mine_configuration_parameters<T>(
     production_factor: u64,
     erbium_upgrade_cost: u64,
-    //lanthanum_upgrade_cost: u64,
-    //thorium_upgrade_cost: u64,
+    lanthanum_upgrade_cost: u64,
+    thorium_upgrade_cost: u64,
 ): MineConfigurationParameters<T> {
     MineConfigurationParameters<T> {
         production_factor,
         erbium_upgrade_cost,
-        //lanthanum_upgrade_cost,
-        //thorium_upgrade_cost,
+        lanthanum_upgrade_cost,
+        thorium_upgrade_cost,
     }
 }
 
@@ -40,6 +40,14 @@ public(package) fun get_production_factor<T>(self: &MineConfigurationParameters<
 
 public(package) fun get_erbium_upgrade_cost<T>(self: &MineConfigurationParameters<T>): u64 {
     self.erbium_upgrade_cost
+}
+
+public(package) fun get_lanthanum_upgrade_cost<T>(self: &MineConfigurationParameters<T>): u64 {
+    self.lanthanum_upgrade_cost
+}
+
+public(package) fun get_thorium_upgrade_cost<T>(self: &MineConfigurationParameters<T>): u64 {
+    self.thorium_upgrade_cost
 }
 
 // ::setters
