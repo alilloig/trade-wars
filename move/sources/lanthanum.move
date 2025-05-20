@@ -3,8 +3,7 @@
 
 module trade_wars::lanthanum;
 
-// === Imports ===
-use sui::coin::{Self};
+use sui::coin;
 use sui::url;
 
 // === Errors ===
@@ -19,7 +18,7 @@ public struct LAN has copy, drop, store {}
 
 /// Returns the lanthanum witness
 public(package) fun get_lanthanum_witness(): LAN {
-    LAN{}
+    LAN {}
 }
 
 // === Method Aliases ===
@@ -36,8 +35,10 @@ fun init(witness: LANTHANUM, ctx: &mut TxContext) {
         b"LAN",
         b"Lanthanum",
         b"Lanthanum, one of the rare-earth elements of Trade Wars",
-        option::some<url::Url>(url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/lanthanum.png")),
-        ctx
+        option::some<url::Url>(
+            url::new_unsafe_from_bytes(b"https://trade-wars.wal.app/media/lanthanum.png"),
+        ),
+        ctx,
     );
     // Freeze Lanthanum metadata
     transfer::public_freeze_object(metadata);

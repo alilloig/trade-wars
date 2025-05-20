@@ -12,7 +12,7 @@ module trade_wars::mine_configuration_parameters;
 // === Structs ===
 /// Configuration parameters for element mines
 /// These parameters control the production rate and upgrade costs
-public struct MineConfigurationParameters<phantom T> has store, copy, drop {
+public struct MineConfigurationParameters<phantom T> has copy, drop, store {
     production_factor: u64,
     erbium_upgrade_cost: u64,
     lanthanum_upgrade_cost: u64,
@@ -62,7 +62,6 @@ public(package) fun get_thorium_upgrade_cost<T>(self: &MineConfigurationParamete
 // ::admin functions
 // ::package functions
 // ::private functions
-
 
 // === Events ===
 

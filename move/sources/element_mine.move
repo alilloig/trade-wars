@@ -7,14 +7,11 @@
 /// if its not enough, it will use the funds from trading, which are actual minted balances stored in the planet
 module trade_wars::element_mine;
 
-// === Imports ===
-// trade_wars::
-use trade_wars::universe_element_source::{UniverseElementSource};
-use trade_wars::erbium::{ERBIUM};
-use trade_wars::lanthanum::{LANTHANUM};
-use trade_wars::thorium::{THORIUM};
-// sui::
-use sui::balance::{Balance};
+use sui::balance::Balance;
+use trade_wars::erbium::ERBIUM;
+use trade_wars::lanthanum::LANTHANUM;
+use trade_wars::thorium::THORIUM;
+use trade_wars::universe_element_source::UniverseElementSource;
 
 // === Errors ===
 /// Error code when there's not enough Erbium to perform an operation
@@ -48,9 +45,7 @@ public struct ElementMine<phantom T> has store {
 
 // === ::ElementMine Package Functions ===
 /// Creates a new ElementMine connected to the provided element source
-public(package) fun create_mine<T>(
-    source: &UniverseElementSource<T>
-): ElementMine<T> {
+public(package) fun create_mine<T>(source: &UniverseElementSource<T>): ElementMine<T> {
     ElementMine {
         source: object::id(source),
         level: 1,
@@ -78,13 +73,13 @@ public(package) fun get_upgrade_thorium_cost<T>(self: &ElementMine<T>): u64 {
 
 /// Upgrades the mine level by consuming the required elements
 public(package) fun upgrade_mine<T>(
-    self: &mut ElementMine<T>, 
+    self: &mut ElementMine<T>,
     erb_source: &mut UniverseElementSource<ERBIUM>,
     erb: Balance<ERBIUM>,
     lan_source: &mut UniverseElementSource<LANTHANUM>,
     lan: Balance<LANTHANUM>,
     tho_source: &mut UniverseElementSource<THORIUM>,
-    tho: Balance<THORIUM>
+    tho: Balance<THORIUM>,
 ) {
     assert!(erb.value() >= self.get_upgrade_erbium_cost(), ENotEnoughERBIUM);
     assert!(lan.value() >= self.get_upgrade_lanthanum_cost(), ENotEnoughLANTHANUM);
@@ -96,10 +91,15 @@ public(package) fun upgrade_mine<T>(
 }
 
 /// Extracts produced elements from the mine based on time passed since last extraction
-public(package) fun extract<T>(self: &mut ElementMine<T>, source: &mut UniverseElementSource<T>, time: u64): Balance<T> {
+public(package) fun extract<T>(
+    self: &mut ElementMine<T>,
+    source: &mut UniverseElementSource<T>,
+    time: u64,
+): Balance<T> {
     self.update_upgrade_costs<T>(source);
     let minutes_since_last_extraction = (time - self.last_extraction) / (MillisecondsPerMinute);
-    let mev = minutes_since_last_extraction * self.level / source.mines_parameters<T>().get_production_factor();
+    let mev =
+        minutes_since_last_extraction * self.level / source.mines_parameters<T>().get_production_factor();
     self.last_extraction = time;
     source.extract(mev)
 }

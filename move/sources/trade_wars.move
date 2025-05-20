@@ -5,29 +5,21 @@
 /// manages universe creation, and handles global game settings.
 module trade_wars::trade_wars;
 
-// === Imports ===
-// trade_wars::
-use trade_wars::universe::{
-                            Self, 
-                            Universe, 
-                            UniverseInfo, 
-                            UniverseCreatorCapability,
-                          };
-use trade_wars::element_source::{Self, ElementSource};
-use trade_wars::universe_element_source::{Self};
-use trade_wars::mine_configuration_parameters::{Self};
-use trade_wars::erbium::{ERBIUM};
-use trade_wars::lanthanum::{LANTHANUM};
-use trade_wars::thorium::{THORIUM};
-// sui::
-use sui::package::{Self};
-use sui::event::{Self};
-use sui::vec_map::{Self, VecMap};
-use sui::clock::Clock;
-use std::string::{String};
+use std::string::String;
 use sui::balance::{Self, Balance};
+use sui::clock::Clock;
 use sui::coin::{Coin, TreasuryCap};
-use sui::sui::{SUI};
+use sui::event;
+use sui::package;
+use sui::sui::SUI;
+use sui::vec_map::{Self, VecMap};
+use trade_wars::element_source::{Self, ElementSource};
+use trade_wars::erbium::ERBIUM;
+use trade_wars::lanthanum::LANTHANUM;
+use trade_wars::mine_configuration_parameters;
+use trade_wars::thorium::THORIUM;
+use trade_wars::universe::{Self, Universe, UniverseInfo, UniverseCreatorCapability};
+use trade_wars::universe_element_source;
 
 // === Errors ===
 /// Error code when payment for universe creation is insufficient
@@ -71,7 +63,7 @@ public struct TRADE_WARS has drop {}
 
 /// Capability that grants admin access to the game
 public struct GameAdminCapability has key {
-    id: UID
+    id: UID,
 }
 
 // === ::TradeWarsPublicInfo ===
@@ -88,7 +80,7 @@ public struct TradeWarsPublicInfo has key {
     universe_creation_price: u64,
 }
 
-    // === ::TradeWarsPublicInfo Private Functions ===
+// === ::TradeWarsPublicInfo Private Functions ===
 
 /// Creates a new TradeWarsPublicInfo object
 fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsPublicInfo {
@@ -100,7 +92,7 @@ fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsPublicInfo {
     }
 }
 
-    // === ::TradeWarsPublicInfo Entry Functions ===
+// === ::TradeWarsPublicInfo Entry Functions ===
 
 /// Returns an array of Universe IDs only for open universes so clients can fetch their respective Display
 entry fun get_open_universes(self: &TradeWarsPublicInfo): vector<ID> {
@@ -134,10 +126,10 @@ public struct TradeWars has key {
     /// Price in SUI to create a new universe
     universe_creation_price: u64,
     /// Balance of SUI collected from universe creation fees
-    universe_creation_fees: Balance<SUI>
+    universe_creation_fees: Balance<SUI>,
 }
 
-    // === ::TradeWars Private Functions ===
+// === ::TradeWars Private Functions ===
 
 /// Creates a new TradeWars game instance
 fun new_game(_cap: &GameAdminCapability, ctx: &mut TxContext): TradeWars {
@@ -149,52 +141,56 @@ fun new_game(_cap: &GameAdminCapability, ctx: &mut TxContext): TradeWars {
         universes: vec_map::empty(),
         public_universe_creation: false,
         universe_creation_price: 0,
-        universe_creation_fees: balance::zero<SUI>()
+        universe_creation_fees: balance::zero<SUI>(),
     }
 }
 
-    // === ::TradeWars Entry Functions ===
+// === ::TradeWars Entry Functions ===
 
 /// After deployment of contracts we need to call this to store the elements TreasureCaps inside the element sources
 #[allow(lint(share_owned))]
 entry fun create_element_sources(
-    self: &mut TradeWars, 
-    _cap: &GameAdminCapability, 
-    erb_treasury: TreasuryCap<ERBIUM>, 
+    self: &mut TradeWars,
+    _cap: &GameAdminCapability,
+    erb_treasury: TreasuryCap<ERBIUM>,
     lan_treasury: TreasuryCap<LANTHANUM>,
     tho_treasury: TreasuryCap<THORIUM>,
-    ctx: &mut TxContext
-) {
+    ctx: &mut TxContext,
+): (ID, ID, ID) {
     // Create the erbium source
     let erb_source = element_source::create_source<ERBIUM>(
-        erb_treasury, 
+        erb_treasury,
         mine_configuration_parameters::create_mine_configuration_parameters<ERBIUM>(
             InitialErbiumMinesProductionFactor,
             InitialErbiumMinesErbiumUpgradeCost,
             InitialErbiumMinesLanthanumUpgradeCost,
-            InitialErbiumMinesThoriumUpgradeCost
+            InitialErbiumMinesThoriumUpgradeCost,
         ),
-        ctx
+        ctx,
     );
+    let erb_source_id = object::id(&erb_source);
     // Store the element source ID in the core game object
-    self.erbium_source.fill(object::id(&erb_source));
+    self.erbium_source.fill(erb_source_id);
     // Share the element source
     transfer::public_share_object(erb_source);
+
     // Create the lanthanum source
     let lan_source = element_source::create_source<LANTHANUM>(
-        lan_treasury, 
+        lan_treasury,
         mine_configuration_parameters::create_mine_configuration_parameters<LANTHANUM>(
             InitialLanthanumMinesProductionFactor,
             InitialLanthanumMinesErbiumUpgradeCost,
             InitialLanthanumMinesLanthanumUpgradeCost,
-            InitialLanthanumMinesThoriumUpgradeCost
+            InitialLanthanumMinesThoriumUpgradeCost,
         ),
-        ctx
+        ctx,
     );
+    let lan_source_id = object::id(&lan_source);
     // Store the element source ID in the core game object
-    self.lanthanum_source.fill(object::id(&lan_source));
+    self.lanthanum_source.fill(lan_source_id);
     // Share the element source
     transfer::public_share_object(lan_source);
+
     // Create the thorium source
     let tho_source = element_source::create_source<THORIUM>(
         tho_treasury,
@@ -202,14 +198,16 @@ entry fun create_element_sources(
             InitialThoriumMinesProductionFactor,
             InitialThoriumMinesErbiumUpgradeCost,
             InitialThoriumMinesLanthanumUpgradeCost,
-            InitialThoriumMinesThoriumUpgradeCost
+            InitialThoriumMinesThoriumUpgradeCost,
         ),
-        ctx
+        ctx,
     );
+    let tho_source_id = object::id(&tho_source);
     // Store the element source ID in the core game object
-    self.thorium_source.fill(object::id(&tho_source));
+    self.thorium_source.fill(tho_source_id);
     // Share the element source
     transfer::public_share_object(tho_source);
+    (erb_source_id, lan_source_id, tho_source_id)
 }
 
 /// Anyone can call this to start their own universe of the game by paying a fee
@@ -219,30 +217,30 @@ entry fun public_start_universe(
     lan_source: &ElementSource<LANTHANUM>,
     tho_source: &ElementSource<THORIUM>,
     name: String,
-    galaxies: u8, 
-    systems: u8, 
+    galaxies: u8,
+    systems: u8,
     planets: u8,
     payment: Coin<SUI>,
-    clock: &Clock, 
-    ctx: &mut TxContext
-) {
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (ID, ID, ID, ID) {
     // Check if the payment is enough
     assert!(payment.value() >= self.universe_creation_price, EUniverseCreationInsufficientPayment);
     // Transfer the payment to the Game vault
     self.universe_creation_fees.join(payment.into_balance());
     // Start Universe
     start_universe(
-        self, 
-        erb_source, 
+        self,
+        erb_source,
         lan_source,
         tho_source,
-        name, 
-        galaxies, 
-        systems, 
-        planets, 
-        clock, 
-        ctx
-    );
+        name,
+        galaxies,
+        systems,
+        planets,
+        clock,
+        ctx,
+    )
 }
 
 /// Game owner can always create new universes for free
@@ -253,29 +251,34 @@ entry fun admin_start_universe(
     lan_source: &ElementSource<LANTHANUM>,
     tho_source: &ElementSource<THORIUM>,
     name: String,
-    galaxies: u8, 
-    systems: u8, 
+    galaxies: u8,
+    systems: u8,
     planets: u8,
-    clock: &Clock, 
-    ctx: &mut TxContext
-) {
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (ID, ID, ID, ID) {
     // Start Universe
     start_universe(
-        self, 
-        erb_source, 
+        self,
+        erb_source,
         lan_source,
         tho_source,
-        name, 
-        galaxies, 
-        systems, 
-        planets, 
-        clock, 
-        ctx
-    );
+        name,
+        galaxies,
+        systems,
+        planets,
+        clock,
+        ctx,
+    )
 }
 
 /// Opens registration on universe and updates the open state on both the central game and game info objects
-entry fun open_universe(self: &mut TradeWars, game_info: &mut TradeWarsPublicInfo, universe: &mut Universe, creator_cap: &UniverseCreatorCapability) {
+entry fun open_universe(
+    self: &mut TradeWars,
+    game_info: &mut TradeWarsPublicInfo,
+    universe: &mut Universe,
+    creator_cap: &UniverseCreatorCapability,
+) {
     // Check the permissions for mutating the universe
     assert!(universe::creator_has_access(universe, creator_cap), ENotUniverseCreator);
     // Check the universe wasn't open before
@@ -289,7 +292,12 @@ entry fun open_universe(self: &mut TradeWars, game_info: &mut TradeWarsPublicInf
 }
 
 /// Close registration on universe and updates the open state on both the central game and game info objects
-entry fun close_universe(self: &mut TradeWars, game_info: &mut TradeWarsPublicInfo, universe: &mut Universe, creator_cap: &UniverseCreatorCapability) {
+entry fun close_universe(
+    self: &mut TradeWars,
+    game_info: &mut TradeWarsPublicInfo,
+    universe: &mut Universe,
+    creator_cap: &UniverseCreatorCapability,
+) {
     // Check the permissions for mutating the universe
     assert!(universe::creator_has_access(universe, creator_cap), ENotUniverseCreator);
     // Set the universe info on game object as close
@@ -305,119 +313,124 @@ entry fun close_universe(self: &mut TradeWars, game_info: &mut TradeWarsPublicIn
 // Entry methods for modifying global game settings
 
 /// Sets the price for creating a universe
-entry fun set_universe_creation_fees(self: &mut TradeWars, _cap: &GameAdminCapability, price: u64, info: &mut TradeWarsPublicInfo) {
+entry fun set_universe_creation_fees(
+    self: &mut TradeWars,
+    _cap: &GameAdminCapability,
+    price: u64,
+    info: &mut TradeWarsPublicInfo,
+) {
     self.universe_creation_price = price;
     info.universe_creation_price = price;
 }
 
 /// Sets the production parameters for erbium mines
 entry fun set_erbium_mines_production<ERBIUM>(
-    self: &mut ElementSource<ERBIUM>, 
-    _cap: &GameAdminCapability, 
+    self: &mut ElementSource<ERBIUM>,
+    _cap: &GameAdminCapability,
     production: u64,
     erb_upgrade_cost: u64,
     lan_upgrade_cost: u64,
-    tho_upgrade_cost: u64
+    tho_upgrade_cost: u64,
 ) {
     element_source::set_mine_parameters(
-        self, 
+        self,
         mine_configuration_parameters::create_mine_configuration_parameters<ERBIUM>(
-            production, 
+            production,
             erb_upgrade_cost,
             lan_upgrade_cost,
-            tho_upgrade_cost
-        )
+            tho_upgrade_cost,
+        ),
     );
 }
 
 /// Sets the refill quantity for erbium mines
 entry fun set_erbium_mines_refill_qty<ERBIUM>(
-    self: &mut ElementSource<ERBIUM>, 
-    _cap: &GameAdminCapability, 
-    refill_qty: u64
+    self: &mut ElementSource<ERBIUM>,
+    _cap: &GameAdminCapability,
+    refill_qty: u64,
 ) {
     element_source::set_sources_refill_qty(self, refill_qty);
 }
 
 /// Sets the refill threshold for erbium mines
 entry fun set_erbium_mines_refill_threshold<ERBIUM>(
-    self: &mut ElementSource<ERBIUM>, 
-    _cap: &GameAdminCapability, 
-    refill_threshold: u64
+    self: &mut ElementSource<ERBIUM>,
+    _cap: &GameAdminCapability,
+    refill_threshold: u64,
 ) {
     element_source::set_sources_refill_threshold(self, refill_threshold);
 }
 
 /// Sets the production parameters for lanthanum mines
 entry fun set_lanthanum_mines_production<LANTHANUM>(
-    self: &mut ElementSource<LANTHANUM>, 
-    _cap: &GameAdminCapability, 
+    self: &mut ElementSource<LANTHANUM>,
+    _cap: &GameAdminCapability,
     production: u64,
     lan_upgrade_cost: u64,
-    tho_upgrade_cost: u64
+    tho_upgrade_cost: u64,
 ) {
     element_source::set_mine_parameters(
-        self, 
+        self,
         mine_configuration_parameters::create_mine_configuration_parameters<LANTHANUM>(
-            production, 
-            lan_upgrade_cost, 
-            lan_upgrade_cost, 
-            tho_upgrade_cost    
-        )
+            production,
+            lan_upgrade_cost,
+            lan_upgrade_cost,
+            tho_upgrade_cost,
+        ),
     );
 }
 
 /// Sets the refill quantity for lanthanum mines
 entry fun set_lanthanum_mines_refill_qty<LANTHANUM>(
-    self: &mut ElementSource<LANTHANUM>, 
-    _cap: &GameAdminCapability, 
-    refill_qty: u64
+    self: &mut ElementSource<LANTHANUM>,
+    _cap: &GameAdminCapability,
+    refill_qty: u64,
 ) {
     element_source::set_sources_refill_qty(self, refill_qty);
 }
 
 /// Sets the refill threshold for lanthanum mines
 entry fun set_lanthanum_mines_refill_threshold<LANTHANUM>(
-    self: &mut ElementSource<LANTHANUM>, 
-    _cap: &GameAdminCapability, 
-    refill_threshold: u64
+    self: &mut ElementSource<LANTHANUM>,
+    _cap: &GameAdminCapability,
+    refill_threshold: u64,
 ) {
     element_source::set_sources_refill_threshold(self, refill_threshold);
 }
 
 /// Sets the production parameters for thorium mines
 entry fun set_thorium_mines_production<THORIUM>(
-    self: &mut ElementSource<THORIUM>, 
-    _cap: &GameAdminCapability, 
+    self: &mut ElementSource<THORIUM>,
+    _cap: &GameAdminCapability,
     production: u64,
     erb_upgrade_cost: u64,
-    lan_upgrade_cost: u64
-) { 
+    lan_upgrade_cost: u64,
+) {
     element_source::set_mine_parameters(
-        self, 
+        self,
         mine_configuration_parameters::create_mine_configuration_parameters<THORIUM>(
-            production, 
-            erb_upgrade_cost, 
-            lan_upgrade_cost, 
-            lan_upgrade_cost
-        )
+            production,
+            erb_upgrade_cost,
+            lan_upgrade_cost,
+            lan_upgrade_cost,
+        ),
     );
 }
 
 /// Sets the refill quantity for thorium mines
 entry fun set_thorium_mines_refill_qty<THORIUM>(
-    self: &mut ElementSource<THORIUM>, 
-    _cap: &GameAdminCapability, 
-    refill_qty: u64
+    self: &mut ElementSource<THORIUM>,
+    _cap: &GameAdminCapability,
+    refill_qty: u64,
 ) {
     element_source::set_sources_refill_qty(self, refill_qty);
 }
 
 /// Sets the refill threshold for thorium mines
 entry fun set_thorium_mines_refill_threshold<THORIUM>(
-    self: &mut ElementSource<THORIUM>, 
-    _cap: &GameAdminCapability, 
-    refill_threshold: u64
+    self: &mut ElementSource<THORIUM>,
+    _cap: &GameAdminCapability,
+    refill_threshold: u64,
 ) {
     element_source::set_sources_refill_threshold(self, refill_threshold);
 }
@@ -426,7 +439,7 @@ entry fun set_thorium_mines_refill_threshold<THORIUM>(
 /// Event emitted when the Trade Wars game begins
 public struct TradeWarsBegin has copy, drop {
     /// ID of the newly created TradeWars object
-    id: ID
+    id: ID,
 }
 
 // === Method Aliases ===
@@ -445,12 +458,12 @@ fun init(otw: TRADE_WARS, ctx: &mut TxContext) {
     transfer::public_transfer(publisher, ctx.sender());
     // Create CreatorCapability
     let admin_cap = GameAdminCapability {
-        id: object::new(ctx)
+        id: object::new(ctx),
     };
     // Create new game
     let trade_wars = new_game(&admin_cap, ctx);
     event::emit(TradeWarsBegin {
-        id: object::id(&trade_wars)
+        id: object::id(&trade_wars),
     });
     // Transfer GameAdmin capability to owner
     transfer::transfer(admin_cap, ctx.sender());
@@ -471,56 +484,64 @@ fun start_universe(
     lan_source: &ElementSource<LANTHANUM>,
     tho_source: &ElementSource<THORIUM>,
     name: String,
-    galaxies: u8, 
-    systems: u8, 
+    galaxies: u8,
+    systems: u8,
     planets: u8,
-    clock: &Clock, 
-    ctx: &mut TxContext
-) {
+    clock: &Clock,
+    ctx: &mut TxContext,
+): (ID, ID, ID, ID) {
+
     // Construct the universe info
     let info = universe::create_universe_info(
-        name, 
-        galaxies, 
-        systems, 
-        planets
+        name,
+        galaxies,
+        systems,
+        planets,
     );
     // Create a new universe object
     let (mut universe, creator_capability) = universe::create_universe(
-        info,  
-        clock.timestamp_ms(), 
-        ctx
+        info,
+        clock.timestamp_ms(),
+        ctx,
     );
+    let universe_id = object::id(&universe);
     // Register the universe in the game object
-    self.universes.insert<ID, UniverseInfo>(object::id(&universe), info);
+    self.universes.insert<ID, UniverseInfo>(universe_id, info);
+
     // Create the universe element source for erbium
     let universe_erbium_source = universe_element_source::create_universe_element_source<ERBIUM>(
-        object::id(&universe),
+        universe_id,
         object::id(erb_source),
         element_source::get_sources_refill_threshold(erb_source),
         element_source::get_mine_parameters(erb_source),
-        ctx
+        ctx,
     );
+    let universe_erbium_source_id = object::id(&universe_erbium_source);
+
     // Create the universe element source for lanthanum
     let universe_lanthanum_source = universe_element_source::create_universe_element_source<LANTHANUM>(
-        object::id(&universe),
+        universe_id,
         object::id(lan_source),
         element_source::get_sources_refill_threshold(lan_source),
         element_source::get_mine_parameters(lan_source),
-        ctx
+        ctx,
     );
+    let universe_lanthanum_source_id = object::id(&universe_lanthanum_source);
     // Create the universe element source for thorium
     let universe_thorium_source = universe_element_source::create_universe_element_source<THORIUM>(
-        object::id(&universe),
+        universe_id,
         object::id(tho_source),
         element_source::get_sources_refill_threshold(tho_source),
         element_source::get_mine_parameters(tho_source),
-        ctx
+        ctx,
     );
+    let universe_thorium_source_id = object::id(&universe_thorium_source);
+
     // Link the universe element source to the universe
     universe.link_elements_sources(
-        object::id(&universe_erbium_source),
-        object::id(&universe_lanthanum_source),
-        object::id(&universe_thorium_source)
+        universe_erbium_source_id,
+        universe_lanthanum_source_id,
+        universe_thorium_source_id,
     );
     // Share all universe element sources
     transfer::public_share_object(universe_erbium_source);
@@ -530,6 +551,7 @@ fun start_universe(
     transfer::public_share_object(universe);
     // Transfer creator capability
     transfer::public_transfer(creator_capability, ctx.sender());
+    (universe_id, universe_erbium_source_id, universe_lanthanum_source_id, universe_thorium_source_id)
 }
 
 // === Test Functions ===
