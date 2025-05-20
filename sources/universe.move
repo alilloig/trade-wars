@@ -115,8 +115,10 @@ fun borrow_free_planets_mut(self: &mut Universe): &mut vector<PlanetInfo> {
 }
 
 // ::setters
-public(package) fun link_elements_sources(self: &mut Universe, erb_source: ID) {
+public(package) fun link_elements_sources(self: &mut Universe, erb_source: ID, lan_source: ID, tho_source: ID) {
     link_erbium_source(self, erb_source);
+    link_lanthanum_source(self, lan_source);
+    link_thorium_source(self, tho_source);
 }
 
 public(package) fun open_universe(self: &mut Universe, creator_cap: &UniverseCreatorCapability) {
