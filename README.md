@@ -24,10 +24,11 @@ This project aims to explore and demonstrate how smart contracts can unlock new 
 This game was created for the **Sui Hackathon 2025**, and is currently at a POC/MVP stage.
 
 #### Available features  
-1. Admin: create new Universes  
-2. Players: join Universes  
-3. Players: use resources to upgrade resource mines
+1. Admin: create new Universes
+1. Players: join Trade Wars (get their overseer object)
+1. Players: join Universe
+1. Players: use resources to upgrade resource mines
 
 #### Upcoming features  
 1. Trade resources with the game in exchange for Nova  
-2. Trade resources directly with other players
+1. Trade resources directly with other players
