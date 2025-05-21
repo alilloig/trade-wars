@@ -1,5 +1,7 @@
 move/build/
 move/Move.lock
 web/node_modules/
+web/.vite
 cli/node_modules/
 cli/.env
+.vscode/
