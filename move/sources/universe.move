@@ -12,31 +12,31 @@ use sui::package::Publisher;
 use sui::random::RandomGenerator;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
-use trade_wars::planet::{Self, PlanetInfo, PlanetCapability, create_planet_info};
+use trade_wars::planet::{Self, PlanetInfo, PlanetCap, create_planet_info};
 use trade_wars::thorium::THORIUM;
 use trade_wars::universe_element_source::UniverseElementSource;
 
 // === Errors ===
 /// Error code when an operation is attempted by someone who is not the universe creator
 const ENotUniverseCreator: u64 = 0;
-
+const EUniverseNotInitialized: u64 = 1;
 // === Constants ===
 
 // === Structs ===
-/// Capability that grants special rights to the creator of a Universe
-public struct UniverseCreatorCapability has key, store {
+/// Cap that grants special rights to the creator of a Universe
+public struct UniverseCreatorCap has key, store {
     id: UID,
     /// ID of the universe this capability has control over
     universe: ID,
 }
 
-// === ::UniverseCreatorCapability Private Functions ===
+// === ::UniverseCreatorCap Private Functions ===
 /// Creates a new capability for the universe creator
 fun create_universe_creator_capability(
     universe: &Universe,
     ctx: &mut TxContext,
-): UniverseCreatorCapability {
-    UniverseCreatorCapability {
+): UniverseCreatorCap {
+    UniverseCreatorCap {
         id: object::new(ctx),
         universe: object::id(universe),
     }
@@ -105,13 +105,28 @@ public struct Universe has key, store {
     thorium_source: Option<ID>,
 }
 
+public fun erbium_source(self: &Universe): ID {
+    assert!(self.erbium_source.is_some(), EUniverseNotInitialized);
+    *self.erbium_source.borrow()
+}
+
+public fun lanthanum_source(self: &Universe): ID {
+    assert!(self.lanthanum_source.is_some(), EUniverseNotInitialized);
+    *self.lanthanum_source.borrow()
+}
+
+public fun thorium_source(self: &Universe): ID {
+    assert!(self.thorium_source.is_some(), EUniverseNotInitialized);
+    *self.thorium_source.borrow()
+}
+
 // ::constructor
 /// Creates a new Universe with the given info and genesis timestamp
 public(package) fun create_universe(
     info: UniverseInfo,
     genesis: u64,
     ctx: &mut TxContext,
-): (Universe, UniverseCreatorCapability) {
+): (Universe, UniverseCreatorCap) {
     let universe = Universe {
         id: object::new(ctx),
         info,
@@ -154,13 +169,13 @@ public(package) fun link_elements_sources(
 }
 
 /// Opens the universe for player registration (only callable by the universe creator)
-public(package) fun open_universe(self: &mut Universe, creator_cap: &UniverseCreatorCapability) {
+public(package) fun open_universe(self: &mut Universe, creator_cap: &UniverseCreatorCap) {
     assert!(creator_has_access(self, creator_cap), ENotUniverseCreator);
     self.info.open = true;
 }
 
 /// Closes the universe for player registration (only callable by the universe creator)
-public(package) fun close_universe(self: &mut Universe, creator_cap: &UniverseCreatorCapability) {
+public(package) fun close_universe(self: &mut Universe, creator_cap: &UniverseCreatorCap) {
     assert!(creator_has_access(self, creator_cap), ENotUniverseCreator);
     self.info.open = false;
 }
@@ -169,7 +184,7 @@ public(package) fun close_universe(self: &mut Universe, creator_cap: &UniverseCr
 /// Checks if the creator capability has access to this Universe
 public(package) fun creator_has_access(
     self: &Universe,
-    creator_cap: &UniverseCreatorCapability,
+    creator_cap: &UniverseCreatorCap,
 ): bool {
     object::id(self) == creator_cap.universe
 }
@@ -182,11 +197,11 @@ public(package) fun occupy_planet(
     tho_source: &UniverseElementSource<THORIUM>,
     randomizer: &mut RandomGenerator,
     ctx: &mut TxContext,
-): PlanetCapability {
+): PlanetCap {
     let random_element = randomizer.generate_u64_in_range(1, 3);
     randomizer.shuffle<PlanetInfo>(borrow_free_planets_mut(self));
     let info = borrow_free_planets_mut(self).pop_back();
-    let mut cap: Option<PlanetCapability> = option::none();
+    let mut cap: Option<PlanetCap> = option::none();
     if (random_element == 1) {
         cap.fill(
             planet::create_and_share_planet<ERBIUM>(

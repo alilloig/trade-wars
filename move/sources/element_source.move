@@ -6,7 +6,7 @@ module trade_wars::element_source;
 use sui::balance::Balance;
 use sui::coin::TreasuryCap;
 use trade_wars::mine_configuration_parameters::MineConfigurationParameters;
-use trade_wars::universe::UniverseCreatorCapability;
+use trade_wars::universe::UniverseCreatorCap;
 use trade_wars::universe_element_source::UniverseElementSource;
 
 // === Errors ===
@@ -85,7 +85,7 @@ public(package) fun set_mine_parameters<T>(
 entry fun refill_universe_source<T>(
     self: &mut ElementSource<T>,
     universe_source: &mut UniverseElementSource<T>,
-    _cap: &UniverseCreatorCapability,
+    _cap: &UniverseCreatorCap,
 ): u64 {
     assert!(
         self.sources_refill_threshold < universe_source.reserves_value<T>(),

@@ -7,7 +7,7 @@ use sui::random::Random;
 use sui::table::{Self, Table};
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
-use trade_wars::planet::PlanetCapability;
+use trade_wars::planet::PlanetCap;
 use trade_wars::thorium::THORIUM;
 use trade_wars::universe::Universe;
 use trade_wars::universe_element_source::UniverseElementSource;
@@ -21,14 +21,14 @@ const EUniverseNotOpen: u64 = 1;
 /// Represents a player in the game who can control planets and build their empire
 public struct Overseer has key {
     id: UID,
-    empire: Table<ID, vector<PlanetCapability>>,
+    empire: Table<ID, vector<PlanetCap>>,
 }
 
 /// Creates a new Overseer object
 fun new_overseer(ctx: &mut TxContext): Overseer {
     Overseer {
         id: object::new(ctx),
-        empire: table::new<ID, vector<PlanetCapability>>(ctx),
+        empire: table::new<ID, vector<PlanetCap>>(ctx),
     }
 }
 
@@ -49,7 +49,7 @@ entry fun join_universe(
     assert!(!self.has_joined_universe(object::id(universe)), EOverseerAlreadyJoinedUniverse);
     assert!(universe.get_info().open(), EUniverseNotOpen);
     // add a new universe to the empire and save the planet capability in it
-    self.empire.add(object::id(universe), vector::empty<PlanetCapability>());
+    self.empire.add(object::id(universe), vector::empty<PlanetCap>());
     self
         .empire[object::id(universe)]
         .push_back(universe.occupy_planet(
