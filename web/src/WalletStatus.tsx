@@ -23,11 +23,12 @@ export function WalletStatus({ onSelectObject }: WalletStatusProps) {
       ) : (
         <>
           <Box style={{ 
-            width: "100vw", 
+            position: "relative",
+            left: "-1rem",
+            right: "-1rem", 
+            width: "calc(100% + 2rem)",
             margin: 0, 
-            padding: 0,
-            marginLeft: "calc(-50vw + 50%)",
-            marginRight: "calc(-50vw + 50%)"
+            padding: 0
           }}>
             <img 
               src="/tradewars.png" 

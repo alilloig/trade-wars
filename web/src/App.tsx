@@ -15,8 +15,8 @@ function App() {
           <Box
             px="4"
             style={{ 
-              minHeight: "calc(100vh - 120px)", // Full height minus header and footer
-              width: "100%"
+              height: "100%",
+              boxSizing: "border-box"
             }}
           >
             <WalletStatus onSelectObject={(id) => setCurrentPage({ type: 'object', id })} />
@@ -27,8 +27,8 @@ function App() {
           <Box 
             px="4" 
             style={{ 
-              minHeight: "calc(100vh - 120px)", // Full height minus header and footer
-              width: "100%"
+              height: "100%",
+              boxSizing: "border-box"
             }}
           >
             <ObjectDetails 
@@ -42,8 +42,10 @@ function App() {
 
   return (
     <Flex direction="column" style={{ 
-      minHeight: "100vh", 
-      width: "100%",
+      height: "100vh", 
+      width: "100vw",
+      maxWidth: "100%",
+      overflow: "hidden",
       backgroundImage: "url('/background.png')",
       backgroundSize: "cover",
       backgroundPosition: "center",
@@ -56,9 +58,10 @@ function App() {
         py="2"
         justify="between"
         style={{
-          width: "100%",
           backgroundColor: "var(--color-background)",
-          opacity: 1
+          opacity: 1,
+          flexShrink: 0,
+          boxSizing: "border-box"
         }}
       >
         <Box>
@@ -80,11 +83,13 @@ function App() {
         </Box>
       </Flex>
       
-      <Box style={{ flex: 1 }}>
+      <Box style={{ flex: 1, overflow: "auto" }}>
         {renderContent()}
       </Box>
       
-      <Footer />
+      <Box style={{ flexShrink: 0 }}>
+        <Footer />
+      </Box>
     </Flex>
   );
 }
