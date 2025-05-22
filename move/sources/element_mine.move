@@ -8,6 +8,8 @@
 module trade_wars::element_mine;
 
 use sui::balance::Balance;
+use sui::display::{Self, Display};
+use sui::package::Publisher;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::thorium::THORIUM;
@@ -69,6 +71,11 @@ public(package) fun get_upgrade_lanthanum_cost<T>(self: &ElementMine<T>): u64 {
 /// Returns the cost in thorium to upgrade this mine, adjusted for mine level
 public(package) fun get_upgrade_thorium_cost<T>(self: &ElementMine<T>): u64 {
     self.thorium_upgrade_cost * self.level
+}
+
+/// Returns the current level of the mine
+public(package) fun get_level<T>(self: &ElementMine<T>): u64 {
+    self.level
 }
 
 /// Upgrades the mine level by consuming the required elements

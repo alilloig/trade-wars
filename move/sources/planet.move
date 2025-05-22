@@ -6,6 +6,8 @@
 module trade_wars::planet;
 
 use sui::balance::{Self, Balance};
+use sui::display::{Self, Display};
+use sui::package::Publisher;
 use sui::clock::Clock;
 use trade_wars::element_mine::{Self, ElementMine};
 use trade_wars::erbium::ERBIUM;
@@ -153,6 +155,42 @@ public(package) fun upgrade_mine<T>(
     let lan = self.lanthanum_store.split<LANTHANUM>(self.mine.get_upgrade_lanthanum_cost());
     let tho = self.thorium_store.split<THORIUM>(self.mine.get_upgrade_thorium_cost());
     self.mine.upgrade_mine(erb_source, erb, lan_source, lan, tho_source, tho);
+}
+
+public(package) fun get_planet_display<T>(
+    publisher: &Publisher,
+    ctx: &mut TxContext,
+): Display<Planet<T>> {
+    let keys = vector[
+        b"galaxy".to_string(),
+        b"system".to_string(),
+        b"position".to_string(),
+        b"mine level".to_string(),
+        b"mine erbium upgrade cost".to_string(),
+        b"mine lanthanum upgrade cost".to_string(),
+        b"mine thorium upgrade cost".to_string(),
+        b"erbium".to_string(),
+        b"lanthanum".to_string(),
+        b"thorium".to_string(),
+    ];
+    let values = vector[
+        b"{info.galaxy}".to_string(),
+        b"{info.system}".to_string(),
+        b"{info.position}".to_string(),
+        b"{mine.get_level<T>()}".to_string(),
+        b"{mine.get_upgrade_erbium_cost<T>()}".to_string(),
+        b"{mine.get_upgrade_lanthanum_cost<T>()}".to_string(),
+        b"{mine.get_upgrade_thorium_cost<T>()}".to_string(),
+        b"{erbium_store.value<ERBIUM>()}".to_string(),
+        b"{lanthanum_store.value<LANTHANUM>()}".to_string(),
+        b"{thorium_store.value<THORIUM>()}".to_string(),
+    ];
+    display::new_with_fields<Planet<T>>(
+        publisher,
+        keys,
+        values,
+        ctx,
+    )
 }
 
 // === Events ===
