@@ -18,7 +18,7 @@ use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::mine_configuration_parameters;
 use trade_wars::thorium::THORIUM;
-use trade_wars::universe::{Self, Universe, UniverseInfo, UniverseCreatorCapability};
+use trade_wars::universe::{Self, Universe, UniverseInfo, UniverseCreatorCap};
 use trade_wars::universe_element_source;
 
 // === Errors ===
@@ -30,7 +30,8 @@ const EOpeningOpenUniverse: u64 = 1;
 const EClosingClosedUniverse: u64 = 2;
 /// Error code when an operation is attempted by someone who is not the universe creator
 const ENotUniverseCreator: u64 = 3;
-
+/// Error code when the game is not initialized
+const EGameNotInitialized: u64 = 4;
 // === Constants ===
 /// Production factor for initial Erbium mines
 const InitialErbiumMinesProductionFactor: u64 = 2;
@@ -62,15 +63,15 @@ const InitialThoriumMinesThoriumUpgradeCost: u64 = 10;
 public struct TRADE_WARS has drop {}
 
 /// Capability that grants admin access to the game
-public struct GameAdminCapability has key {
+public struct GameAdminCap has key {
     id: UID,
 }
 
-// === ::TradeWarsPublicInfo ===
+// === ::TradeWarsInfo ===
 /// Auxiliary object for keeping public game info, allowing gets without congesting main object.
 /// We trade having some duplicate info for having two shared objects spreading access to them
 /// so they get less penalized on consensus
-public struct TradeWarsPublicInfo has key {
+public struct TradeWarsInfo has key {
     id: UID,
     /// List of universe IDs that are open for registration
     open_universes: vector<ID>,
@@ -80,11 +81,11 @@ public struct TradeWarsPublicInfo has key {
     universe_creation_price: u64,
 }
 
-// === ::TradeWarsPublicInfo Private Functions ===
+// === ::TradeWarsInfo Private Functions ===
 
-/// Creates a new TradeWarsPublicInfo object
-fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsPublicInfo {
-    TradeWarsPublicInfo {
+/// Creates a new TradeWarsInfo object
+fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsInfo {
+    TradeWarsInfo {
         id: object::new(ctx),
         open_universes: vector::empty<ID>(),
         public_universe_creation: false,
@@ -92,22 +93,24 @@ fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsPublicInfo {
     }
 }
 
-// === ::TradeWarsPublicInfo Entry Functions ===
+// === ::TradeWarsInfo Public Functions ===
 
 /// Returns an array of Universe IDs only for open universes so clients can fetch their respective Display
-entry fun get_open_universes(self: &TradeWarsPublicInfo): vector<ID> {
+public fun open_universes(self: &TradeWarsInfo): vector<ID> {
     self.open_universes
 }
 
+/// Returns if universe creation is allowed
+public fun public_universe_creation(self: &TradeWarsInfo): bool {
+    self.public_universe_creation
+}
+
 /// Returns the universe creation price
-entry fun get_universe_creation_price(self: &TradeWarsPublicInfo): u64 {
+public fun universe_creation_price(self: &TradeWarsInfo): u64 {
     self.universe_creation_price
 }
 
-/// Returns if universe creation is allowed
-entry fun get_public_universe_creation(self: &TradeWarsPublicInfo): bool {
-    self.public_universe_creation
-}
+
 
 // === ::TradeWars ===
 /// Main game object that manages universe creation and global game state
@@ -132,7 +135,7 @@ public struct TradeWars has key {
 // === ::TradeWars Private Functions ===
 
 /// Creates a new TradeWars game instance
-fun new_game(_cap: &GameAdminCapability, ctx: &mut TxContext): TradeWars {
+fun new_game(_cap: &GameAdminCap, ctx: &mut TxContext): TradeWars {
     TradeWars {
         id: object::new(ctx),
         erbium_source: option::none(),
@@ -145,13 +148,34 @@ fun new_game(_cap: &GameAdminCapability, ctx: &mut TxContext): TradeWars {
     }
 }
 
-// === ::TradeWars Entry Functions ===
+// === ::TradeWars Public Functions ===
+// This methods allow easy creation of new universes by just passing the element source ID
+/// Returns the ID of the global Erbium element source
+public fun erbium_source(self: &TradeWars): ID {
+    assert!(option::is_some(&self.erbium_source), EGameNotInitialized);
+    *self.erbium_source.borrow()
+}
 
+/// Returns the ID of the global Lanthanum element source
+public fun lanthanum_source(self: &TradeWars): ID {
+    assert!(option::is_some(&self.lanthanum_source), EGameNotInitialized);
+    *self.lanthanum_source.borrow()
+}
+
+/// Returns the ID of the global Thorium element source
+public fun thorium_source(self: &TradeWars): ID {
+    assert!(option::is_some(&self.thorium_source), EGameNotInitialized);
+    *self.thorium_source.borrow()
+}
+
+
+
+// === ::TradeWars Entry Functions ===
 /// After deployment of contracts we need to call this to store the elements TreasureCaps inside the element sources
 #[allow(lint(share_owned))]
 entry fun create_element_sources(
     self: &mut TradeWars,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     erb_treasury: TreasuryCap<ERBIUM>,
     lan_treasury: TreasuryCap<LANTHANUM>,
     tho_treasury: TreasuryCap<THORIUM>,
@@ -246,7 +270,7 @@ entry fun public_start_universe(
 /// Game owner can always create new universes for free
 entry fun admin_start_universe(
     self: &mut TradeWars,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     erb_source: &ElementSource<ERBIUM>,
     lan_source: &ElementSource<LANTHANUM>,
     tho_source: &ElementSource<THORIUM>,
@@ -275,9 +299,9 @@ entry fun admin_start_universe(
 /// Opens registration on universe and updates the open state on both the central game and game info objects
 entry fun open_universe(
     self: &mut TradeWars,
-    game_info: &mut TradeWarsPublicInfo,
+    creator_cap: &UniverseCreatorCap,
+    game_info: &mut TradeWarsInfo,
     universe: &mut Universe,
-    creator_cap: &UniverseCreatorCapability,
 ) {
     // Check the permissions for mutating the universe
     assert!(universe::creator_has_access(universe, creator_cap), ENotUniverseCreator);
@@ -294,9 +318,9 @@ entry fun open_universe(
 /// Close registration on universe and updates the open state on both the central game and game info objects
 entry fun close_universe(
     self: &mut TradeWars,
-    game_info: &mut TradeWarsPublicInfo,
+    creator_cap: &UniverseCreatorCap,
+    game_info: &mut TradeWarsInfo,
     universe: &mut Universe,
-    creator_cap: &UniverseCreatorCapability,
 ) {
     // Check the permissions for mutating the universe
     assert!(universe::creator_has_access(universe, creator_cap), ENotUniverseCreator);
@@ -315,9 +339,9 @@ entry fun close_universe(
 /// Sets the price for creating a universe
 entry fun set_universe_creation_fees(
     self: &mut TradeWars,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     price: u64,
-    info: &mut TradeWarsPublicInfo,
+    info: &mut TradeWarsInfo,
 ) {
     self.universe_creation_price = price;
     info.universe_creation_price = price;
@@ -326,7 +350,7 @@ entry fun set_universe_creation_fees(
 /// Sets the production parameters for erbium mines
 entry fun set_erbium_mines_production<ERBIUM>(
     self: &mut ElementSource<ERBIUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     production: u64,
     erb_upgrade_cost: u64,
     lan_upgrade_cost: u64,
@@ -346,7 +370,7 @@ entry fun set_erbium_mines_production<ERBIUM>(
 /// Sets the refill quantity for erbium mines
 entry fun set_erbium_mines_refill_qty<ERBIUM>(
     self: &mut ElementSource<ERBIUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     refill_qty: u64,
 ) {
     element_source::set_sources_refill_qty(self, refill_qty);
@@ -355,7 +379,7 @@ entry fun set_erbium_mines_refill_qty<ERBIUM>(
 /// Sets the refill threshold for erbium mines
 entry fun set_erbium_mines_refill_threshold<ERBIUM>(
     self: &mut ElementSource<ERBIUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     refill_threshold: u64,
 ) {
     element_source::set_sources_refill_threshold(self, refill_threshold);
@@ -364,7 +388,7 @@ entry fun set_erbium_mines_refill_threshold<ERBIUM>(
 /// Sets the production parameters for lanthanum mines
 entry fun set_lanthanum_mines_production<LANTHANUM>(
     self: &mut ElementSource<LANTHANUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     production: u64,
     lan_upgrade_cost: u64,
     tho_upgrade_cost: u64,
@@ -383,7 +407,7 @@ entry fun set_lanthanum_mines_production<LANTHANUM>(
 /// Sets the refill quantity for lanthanum mines
 entry fun set_lanthanum_mines_refill_qty<LANTHANUM>(
     self: &mut ElementSource<LANTHANUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     refill_qty: u64,
 ) {
     element_source::set_sources_refill_qty(self, refill_qty);
@@ -392,7 +416,7 @@ entry fun set_lanthanum_mines_refill_qty<LANTHANUM>(
 /// Sets the refill threshold for lanthanum mines
 entry fun set_lanthanum_mines_refill_threshold<LANTHANUM>(
     self: &mut ElementSource<LANTHANUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     refill_threshold: u64,
 ) {
     element_source::set_sources_refill_threshold(self, refill_threshold);
@@ -401,7 +425,7 @@ entry fun set_lanthanum_mines_refill_threshold<LANTHANUM>(
 /// Sets the production parameters for thorium mines
 entry fun set_thorium_mines_production<THORIUM>(
     self: &mut ElementSource<THORIUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     production: u64,
     erb_upgrade_cost: u64,
     lan_upgrade_cost: u64,
@@ -420,7 +444,7 @@ entry fun set_thorium_mines_production<THORIUM>(
 /// Sets the refill quantity for thorium mines
 entry fun set_thorium_mines_refill_qty<THORIUM>(
     self: &mut ElementSource<THORIUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     refill_qty: u64,
 ) {
     element_source::set_sources_refill_qty(self, refill_qty);
@@ -429,7 +453,7 @@ entry fun set_thorium_mines_refill_qty<THORIUM>(
 /// Sets the refill threshold for thorium mines
 entry fun set_thorium_mines_refill_threshold<THORIUM>(
     self: &mut ElementSource<THORIUM>,
-    _cap: &GameAdminCapability,
+    _cap: &GameAdminCap,
     refill_threshold: u64,
 ) {
     element_source::set_sources_refill_threshold(self, refill_threshold);
@@ -453,11 +477,15 @@ fun init(otw: TRADE_WARS, ctx: &mut TxContext) {
     let publisher = package::claim(otw, ctx);
     // Create  and transfer Universe display
     let display = universe::get_universe_display(&publisher, ctx);
+
+
+
+
     transfer::public_transfer(display, ctx.sender());
     // Transfer publisher object to owner
     transfer::public_transfer(publisher, ctx.sender());
     // Create CreatorCapability
-    let admin_cap = GameAdminCapability {
+    let admin_cap = GameAdminCap {
         id: object::new(ctx),
     };
     // Create new game

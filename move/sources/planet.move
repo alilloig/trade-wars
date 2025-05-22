@@ -6,6 +6,8 @@
 module trade_wars::planet;
 
 use sui::balance::{Self, Balance};
+use sui::display::{Self, Display};
+use sui::package::Publisher;
 use sui::clock::Clock;
 use trade_wars::element_mine::{Self, ElementMine};
 use trade_wars::erbium::ERBIUM;
@@ -22,22 +24,22 @@ const ENotPlanetOverseer: u64 = 0;
 // === Constants ===
 
 // === Structs ===
-// === ::PlanetCapability ===
-/// Capability that grants ownership and control over a planet
-public struct PlanetCapability has store {
+// === ::PlanetCap ===
+/// Cap that grants ownership and control over a planet
+public struct PlanetCap has store {
     /// ID of the planet this capability controls
     planet: ID,
 }
 
-/// Creates a new PlanetCapability for the given planet ID
-fun create_planet_capability(planet: ID): PlanetCapability {
-    PlanetCapability {
+/// Creates a new PlanetCap for the given planet ID
+fun create_planet_capability(planet: ID): PlanetCap {
+    PlanetCap {
         planet,
     }
 }
 
 /// Returns the ID of the planet this capability controls
-public(package) fun planet(self: &PlanetCapability): ID {
+public(package) fun planet(self: &PlanetCap): ID {
     self.planet
 }
 
@@ -60,7 +62,7 @@ public(package) fun create_planet_info(galaxy: u8, system: u8, position: u8): Pl
 
 // === ::PlanetInfo Public Functions ===
 /// Calculates the travel distance between two planets
-/// TODO: Implement this
+/// TODO: What is the formula for this?
 public fun calculate_travel_distance(self: &PlanetInfo, destination: &PlanetInfo): u64 {
     let distance = 0;
     distance
@@ -88,7 +90,7 @@ public(package) fun create_and_share_planet<T>(
     info: PlanetInfo,
     source: &UniverseElementSource<T>,
     ctx: &mut TxContext,
-): PlanetCapability {
+): PlanetCap {
     let planet = Planet<T> {
         id: object::new(ctx),
         info: info,
@@ -103,14 +105,14 @@ public(package) fun create_and_share_planet<T>(
 }
 
 /// Verifies that the capability has authority over this planet
-fun check_overseer_authority<T>(self: &Planet<T>, cap: &PlanetCapability): bool {
+fun check_overseer_authority<T>(self: &Planet<T>, cap: &PlanetCap): bool {
     object::id(self) == cap.planet
 }
 
 /// Extracts erbium from an erbium planet's mine
 public(package) fun extract_erbium(
     self: &mut Planet<ERBIUM>,
-    cap: &PlanetCapability,
+    cap: &PlanetCap,
     source: &mut UniverseElementSource<ERBIUM>,
     c: &Clock,
 ) {
@@ -121,7 +123,7 @@ public(package) fun extract_erbium(
 /// Extracts lanthanum from a lanthanum planet's mine
 public(package) fun extract_lanthanum(
     self: &mut Planet<LANTHANUM>,
-    cap: &PlanetCapability,
+    cap: &PlanetCap,
     source: &mut UniverseElementSource<LANTHANUM>,
     c: &Clock,
 ) {
@@ -132,7 +134,7 @@ public(package) fun extract_lanthanum(
 /// Extracts thorium from a thorium planet's mine
 public(package) fun extract_thorium(
     self: &mut Planet<THORIUM>,
-    cap: &PlanetCapability,
+    cap: &PlanetCap,
     source: &mut UniverseElementSource<THORIUM>,
     c: &Clock,
 ) {
@@ -143,7 +145,7 @@ public(package) fun extract_thorium(
 /// Upgrades a planet's mine to increase its production
 public(package) fun upgrade_mine<T>(
     self: &mut Planet<T>,
-    cap: &PlanetCapability,
+    cap: &PlanetCap,
     erb_source: &mut UniverseElementSource<ERBIUM>,
     lan_source: &mut UniverseElementSource<LANTHANUM>,
     tho_source: &mut UniverseElementSource<THORIUM>,
@@ -155,20 +157,47 @@ public(package) fun upgrade_mine<T>(
     self.mine.upgrade_mine(erb_source, erb, lan_source, lan, tho_source, tho);
 }
 
+public(package) fun get_planet_display<T>(
+    publisher: &Publisher,
+    ctx: &mut TxContext,
+): Display<Planet<T>> {
+    let keys = vector[
+        b"galaxy".to_string(),
+        b"system".to_string(),
+        b"position".to_string(),
+        b"mine level".to_string(),
+        b"mine erbium upgrade cost".to_string(),
+        b"mine lanthanum upgrade cost".to_string(),
+        b"mine thorium upgrade cost".to_string(),
+        b"erbium".to_string(),
+        b"lanthanum".to_string(),
+        b"thorium".to_string(),
+    ];
+    let values = vector[
+        b"{info.galaxy}".to_string(),
+        b"{info.system}".to_string(),
+        b"{info.position}".to_string(),
+        b"{mine.get_level<T>()}".to_string(),
+        b"{mine.get_upgrade_erbium_cost<T>()}".to_string(),
+        b"{mine.get_upgrade_lanthanum_cost<T>()}".to_string(),
+        b"{mine.get_upgrade_thorium_cost<T>()}".to_string(),
+        b"{erbium_store.value<ERBIUM>()}".to_string(),
+        b"{lanthanum_store.value<LANTHANUM>()}".to_string(),
+        b"{thorium_store.value<THORIUM>()}".to_string(),
+    ];
+    display::new_with_fields<Planet<T>>(
+        publisher,
+        keys,
+        values,
+        ctx,
+    )
+}
+
 // === Events ===
 // === Method Aliases ===
 // === Public Functions ===
 // === View Functions ===
 // === Admin Functions ===
-
 // === Package Functions ===
-/*public(package) fun occupy_planet(info: PlanetInfo, ctx: &mut TxContext): PlanetCapability {
-    let planet = create_planet<ERBIUM>(info, ctx);
-    let cap = create_planet_capability(object::id_address(&planet), ctx);
-    transfer::share_object(planet);
-    cap
-}*/
-
 // === Private Functions ===
-
 // === Test Functions ===
