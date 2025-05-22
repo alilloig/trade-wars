@@ -41,13 +41,33 @@ export function WalletStatus({ onSelectObject }: WalletStatusProps) {
               }} 
             />
           </Box>
-          <Container my="2">
-            <Heading mb="2" size="5">
-              Trade Wars is the fully on-chain, massively multiplayer, interplanetary trading game set in a post-apocalyptic future — produce, trade, and expand your reach among the stars.
+          <Container my="4" px="4">
+            <Heading mb="4" size="6" weight="bold" style={{ color: "#d4af37" }}>
+              In the vast darkness of the far future, there is only trade
             </Heading>
-            <Text size="3" weight="bold" mb="2">
-              Connect your wallet to start playing
+            
+            <Text mb="4" size="3" weight="bold" style={{ lineHeight: "1.6", color: "#e0e0e0" }}>
+              Humanity nearly drove itself to extinction during the Last War. Ironically, it was a war invention—Nova, the ultimate fuel enabling fast interplanetary travel—that allowed the last remnants of humanity to leave the Ruined Earth and begin settling other planets. The Company, creators of Nova, retained a monopoly over it, securing tribute from the flourishing human empires born from interstellar expansion. By strictly controlling Nova production, the Company ensures that no rival empire gains enough power to wage war again. Instead, all empires devote themselves to the only god humanity has consistently worshipped: trade.
             </Text>
+
+            <Heading mb="3" size="5" weight="bold" style={{ color: "#d4af37" }}>
+              Gameplay
+            </Heading>
+            
+            <Text mb="4" size="3" weight="bold" style={{ lineHeight: "1.6", color: "#e0e0e0" }}>
+              In <em>Trade Wars</em>, you play as an Overseer—the ruler of an expanding interplanetary empire. Gather resources produced by your planets, invest them to upgrade your infrastructure, and trade with the Company to obtain Nova. Nova enables you to reach and trade with other planets, acquiring the resources your empire needs to thrive.
+            </Text>
+
+            <Box mt="5" p="3" style={{ 
+              border: "2px solid #d4af37", 
+              borderRadius: "8px", 
+              backgroundColor: "rgba(212, 175, 55, 0.1)",
+              textAlign: "center"
+            }}>
+              <Heading size="4" weight="bold" style={{ color: "#d4af37" }}>
+                Connect your wallet to start playing!
+              </Heading>
+            </Box>
           </Container>
         </>
       )}
