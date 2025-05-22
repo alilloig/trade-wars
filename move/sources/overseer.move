@@ -6,6 +6,7 @@ module trade_wars::overseer;
 use sui::random::Random;
 use sui::table::{Self, Table};
 use sui::object_table::{Self, ObjectTable};
+use sui::clock::Clock;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::planet::{Planet, PlanetCap};
@@ -80,6 +81,7 @@ entry fun upgrade_erbium_planet_mine(
     erb_source: &mut UniverseElementSource<ERBIUM>,
     lan_source: &mut UniverseElementSource<LANTHANUM>,
     tho_source: &mut UniverseElementSource<THORIUM>,
+    c: &Clock,
 ) {
     let planet_id = object::id(planet);
     planet.upgrade_erbium_mine(
@@ -87,6 +89,7 @@ entry fun upgrade_erbium_planet_mine(
         erb_source,
         lan_source,
         tho_source,
+        c.timestamp_ms(),
     );
 }
 
@@ -97,6 +100,7 @@ entry fun upgrade_lanthanum_planet_mine(
     erb_source: &mut UniverseElementSource<ERBIUM>,
     lan_source: &mut UniverseElementSource<LANTHANUM>,
     tho_source: &mut UniverseElementSource<THORIUM>,
+    c: &Clock,
 ) {
     let planet_id = object::id(planet);
     planet.upgrade_lanthanum_mine(
@@ -104,6 +108,7 @@ entry fun upgrade_lanthanum_planet_mine(
         erb_source,
         lan_source,
         tho_source,
+        c.timestamp_ms(),
     );
 }
 
@@ -114,6 +119,7 @@ entry fun upgrade_thorium_planet_mine(
     erb_source: &mut UniverseElementSource<ERBIUM>,
     lan_source: &mut UniverseElementSource<LANTHANUM>,
     tho_source: &mut UniverseElementSource<THORIUM>,
+    c: &Clock,
 ) {
     let planet_id = object::id(planet);
     planet.upgrade_thorium_mine(
@@ -121,6 +127,7 @@ entry fun upgrade_thorium_planet_mine(
         erb_source,
         lan_source,
         tho_source,
+        c.timestamp_ms(),
     );
 }
 
