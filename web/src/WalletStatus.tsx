@@ -48,19 +48,6 @@ export function WalletStatus({ onSelectObject }: WalletStatusProps) {
             <Text size="3" weight="bold" mb="2">
               Connect your wallet to start playing
             </Text>
-            <img 
-              src="/cargo_ship.png" 
-              alt="Cargo Ship" 
-              style={{ 
-                maxWidth: '300px', 
-                width: '60%', 
-                height: 'auto', 
-                marginTop: '1rem',
-                display: 'block',
-                marginLeft: 'auto',
-                marginRight: 'auto'
-              }} 
-            />
           </Container>
         </>
       )}

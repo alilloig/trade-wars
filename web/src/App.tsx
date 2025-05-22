@@ -12,10 +12,8 @@ function App() {
       case 'home':
         return (
           <Box
-            pt="2"
             px="4"
             style={{ 
-              background: "var(--gray-a2)", 
               minHeight: "calc(100vh - 60px)", // Full height minus header
               width: "100%"
             }}
@@ -26,10 +24,8 @@ function App() {
       case 'object':
         return (
           <Box 
-            pt="2" 
             px="4" 
             style={{ 
-              background: "var(--gray-a2)", 
               minHeight: "calc(100vh - 60px)", // Full height minus header
               width: "100%"
             }}
@@ -44,8 +40,16 @@ function App() {
   };
 
   return (
-    <Box style={{ minHeight: "100vh", width: "100%" }}>
-      <Flex
+    <Box style={{ 
+      minHeight: "100vh", 
+      width: "100%",
+      backgroundImage: "url('/background.png')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundAttachment: "fixed",
+      backgroundRepeat: "no-repeat"
+    }}>
+              <Flex
         position="sticky"
         px="4"
         py="2"
@@ -53,7 +57,9 @@ function App() {
         style={{
           borderBottom: "1px solid var(--gray-a2)",
           height: "60px", // Fixed header height
-          width: "100%"
+          width: "100%",
+          backgroundColor: "var(--color-background)",
+          opacity: 1
         }}
       >
         <Box>
