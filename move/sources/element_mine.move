@@ -8,8 +8,6 @@
 module trade_wars::element_mine;
 
 use sui::balance::Balance;
-use sui::display::{Self, Display};
-use sui::package::Publisher;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::thorium::THORIUM;
@@ -43,6 +41,8 @@ public struct ElementMine<phantom T> has store {
     lanthanum_upgrade_cost: u64,
     /// Base cost in Thorium to upgrade this mine (multiplied by level)
     thorium_upgrade_cost: u64,
+    /// Production factor of the mine
+    production_factor: u64,
 }
 
 // === ::ElementMine Package Functions ===
@@ -55,6 +55,7 @@ public(package) fun create_mine<T>(source: &UniverseElementSource<T>): ElementMi
         erbium_upgrade_cost: source.mines_parameters<T>().get_erbium_upgrade_cost(),
         lanthanum_upgrade_cost: source.mines_parameters<T>().get_lanthanum_upgrade_cost(),
         thorium_upgrade_cost: source.mines_parameters<T>().get_thorium_upgrade_cost(),
+        production_factor: source.mines_parameters<T>().get_production_factor(),
     }
 }
 
@@ -76,6 +77,11 @@ public(package) fun get_upgrade_thorium_cost<T>(self: &ElementMine<T>): u64 {
 /// Returns the current level of the mine
 public(package) fun get_level<T>(self: &ElementMine<T>): u64 {
     self.level
+}
+
+/// Returns the production factor of the mine
+public(package) fun get_production_factor<T>(self: &ElementMine<T>): u64 {
+    self.production_factor
 }
 
 /// Upgrades the mine level by consuming the required elements
@@ -114,6 +120,8 @@ public(package) fun extract<T>(
 /// Updates the mine's upgrade costs based on the current source configuration
 fun update_upgrade_costs<T>(self: &mut ElementMine<T>, source: &UniverseElementSource<T>) {
     self.erbium_upgrade_cost = source.mines_parameters<T>().get_erbium_upgrade_cost();
+    self.lanthanum_upgrade_cost = source.mines_parameters<T>().get_lanthanum_upgrade_cost();
+    self.thorium_upgrade_cost = source.mines_parameters<T>().get_thorium_upgrade_cost();
 }
 
 // === Events ===

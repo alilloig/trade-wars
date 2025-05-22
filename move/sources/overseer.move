@@ -73,16 +73,16 @@ entry fun join_universe(
 }
 
 // Called by the player whenever they want to upgrade a planet's mine
-entry fun upgrade_planet_mine<T>(
+entry fun upgrade_erbium_planet_mine(
     self: &Overseer,
     universe: ID,
-    planet: &mut Planet<T>,
+    planet: &mut Planet,
     erb_source: &mut UniverseElementSource<ERBIUM>,
     lan_source: &mut UniverseElementSource<LANTHANUM>,
     tho_source: &mut UniverseElementSource<THORIUM>,
 ) {
     let planet_id = object::id(planet);
-    planet.upgrade_mine<T>(
+    planet.upgrade_erbium_mine(
         self.get_planet_cap_ref(universe, planet_id),
         erb_source,
         lan_source,
@@ -90,6 +90,39 @@ entry fun upgrade_planet_mine<T>(
     );
 }
 
+entry fun upgrade_lanthanum_planet_mine(
+    self: &Overseer,
+    universe: ID,
+    planet: &mut Planet,
+    erb_source: &mut UniverseElementSource<ERBIUM>,
+    lan_source: &mut UniverseElementSource<LANTHANUM>,
+    tho_source: &mut UniverseElementSource<THORIUM>,
+) {
+    let planet_id = object::id(planet);
+    planet.upgrade_lanthanum_mine(
+        self.get_planet_cap_ref(universe, planet_id),
+        erb_source,
+        lan_source,
+        tho_source,
+    );
+}
+
+entry fun upgrade_thorium_planet_mine(
+    self: &Overseer,
+    universe: ID,
+    planet: &mut Planet,
+    erb_source: &mut UniverseElementSource<ERBIUM>,
+    lan_source: &mut UniverseElementSource<LANTHANUM>,
+    tho_source: &mut UniverseElementSource<THORIUM>,
+) {
+    let planet_id = object::id(planet);
+    planet.upgrade_thorium_mine(
+        self.get_planet_cap_ref(universe, planet_id),
+        erb_source,
+        lan_source,
+        tho_source,
+    );
+}
 
 
 // === Events ===

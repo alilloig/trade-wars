@@ -20,6 +20,7 @@ use trade_wars::mine_configuration_parameters;
 use trade_wars::thorium::THORIUM;
 use trade_wars::universe::{Self, Universe, UniverseInfo, UniverseCreatorCap};
 use trade_wars::universe_element_source;
+use trade_wars::planet::Self;
 
 // === Errors ===
 /// Error code when payment for universe creation is insufficient
@@ -476,12 +477,11 @@ fun init(otw: TRADE_WARS, ctx: &mut TxContext) {
     // Create and send publisher object to owner
     let publisher = package::claim(otw, ctx);
     // Create  and transfer Universe display
-    let display = universe::get_universe_display(&publisher, ctx);
-
-
-
-
-    transfer::public_transfer(display, ctx.sender());
+    let universe_display = universe::get_universe_display(&publisher, ctx);
+    transfer::public_transfer(universe_display, ctx.sender());
+    // Create and transfer Planet display
+    let planet_display = planet::get_planet_display(&publisher, ctx);
+    transfer::public_transfer(planet_display, ctx.sender());
     // Transfer publisher object to owner
     transfer::public_transfer(publisher, ctx.sender());
     // Create CreatorCapability

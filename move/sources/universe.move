@@ -201,33 +201,13 @@ public(package) fun occupy_planet(
     let random_element = randomizer.generate_u64_in_range(1, 3);
     randomizer.shuffle<PlanetInfo>(borrow_free_planets_mut(self));
     let info = borrow_free_planets_mut(self).pop_back();
-    let mut cap: Option<PlanetCap> = option::none();
-    if (random_element == 1) {
-        cap.fill(
-            planet::create_and_share_planet<ERBIUM>(
-                info,
-                erb_source,
-                ctx,
-            ),
-        );
-    } else if (random_element == 2) {
-        cap.fill(
-            planet::create_and_share_planet<LANTHANUM>(
-                info,
-                lan_source,
-                ctx,
-            ),
-        );
-    } else if (random_element == 3) {
-        cap.fill(
-            planet::create_and_share_planet<THORIUM>(
-                info,
-                tho_source,
-                ctx,
-            ),
-        );
-    };
-    cap.destroy_some()
+    planet::create_and_share_planet(
+        info,
+        erb_source,
+        lan_source,
+        tho_source,
+        ctx,
+    )
 }
 
 // === ::Universe Private Functions ===
