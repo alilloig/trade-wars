@@ -3,6 +3,7 @@ import { Box, Flex, Heading } from "@radix-ui/themes";
 import { useState } from "react";
 import { WalletStatus } from "./WalletStatus";
 import { ObjectDetails } from "./ObjectDetails";
+import { Footer } from "./Footer";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<{ type: 'home' } | { type: 'object'; id: string }>({ type: 'home' });
@@ -14,7 +15,7 @@ function App() {
           <Box
             px="4"
             style={{ 
-              minHeight: "calc(100vh - 60px)", // Full height minus header
+              minHeight: "calc(100vh - 120px)", // Full height minus header and footer
               width: "100%"
             }}
           >
@@ -26,7 +27,7 @@ function App() {
           <Box 
             px="4" 
             style={{ 
-              minHeight: "calc(100vh - 60px)", // Full height minus header
+              minHeight: "calc(100vh - 120px)", // Full height minus header and footer
               width: "100%"
             }}
           >
@@ -40,7 +41,7 @@ function App() {
   };
 
   return (
-    <Box style={{ 
+    <Flex direction="column" style={{ 
       minHeight: "100vh", 
       width: "100%",
       backgroundImage: "url('/background.png')",
@@ -49,7 +50,7 @@ function App() {
       backgroundAttachment: "fixed",
       backgroundRepeat: "no-repeat"
     }}>
-              <Flex
+      <Flex
         position="sticky"
         px="4"
         py="2"
@@ -76,8 +77,12 @@ function App() {
         </Box>
       </Flex>
       
-      {renderContent()}
-    </Box>
+      <Box style={{ flex: 1 }}>
+        {renderContent()}
+      </Box>
+      
+      <Footer />
+    </Flex>
   );
 }
 
