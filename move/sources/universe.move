@@ -74,6 +74,26 @@ public(package) fun create_universe_info(
 }
 
 // ::getters
+/// Returns the name of the universe
+public(package) fun name(self: &UniverseInfo): String {
+    self.name
+}
+
+/// Returns the number of galaxies in the universe
+public(package) fun galaxies(self: &UniverseInfo): u8 {
+    self.galaxies
+}
+
+/// Returns the number of systems per galaxy
+public(package) fun systems(self: &UniverseInfo): u8 {
+    self.systems
+}
+
+/// Returns the number of planets per system
+public(package) fun planets(self: &UniverseInfo): u8 {
+    self.planets
+}
+
 /// Returns whether the universe is open for registration
 public(package) fun open(self: &UniverseInfo): bool {
     self.open
@@ -105,16 +125,25 @@ public struct Universe has key, store {
     thorium_source: Option<ID>,
 }
 
+// ::getters
+/// Returns the info for this universe
+public(package) fun info(self: &Universe): UniverseInfo {
+    self.info
+}
+
+/// Returns the Erbium source for this universe
 public fun erbium_source(self: &Universe): ID {
     assert!(self.erbium_source.is_some(), EUniverseNotInitialized);
     *self.erbium_source.borrow()
 }
 
+/// Returns the Lanthanum source for this universe
 public fun lanthanum_source(self: &Universe): ID {
     assert!(self.lanthanum_source.is_some(), EUniverseNotInitialized);
     *self.lanthanum_source.borrow()
 }
 
+/// Returns the Thorium source for this universe
 public fun thorium_source(self: &Universe): ID {
     assert!(self.thorium_source.is_some(), EUniverseNotInitialized);
     *self.thorium_source.borrow()
@@ -151,8 +180,9 @@ public(package) fun get_info(self: &Universe): UniverseInfo {
 }
 
 /// Returns a mutable reference to the free planets vector
-fun borrow_free_planets_mut(self: &mut Universe): &mut vector<PlanetInfo> {
-    &mut self.free_planets
+fun get_free_planet(self: &mut Universe, randomizer: &mut RandomGenerator): PlanetInfo {
+    randomizer.shuffle<PlanetInfo>(&mut self.free_planets);
+    self.free_planets.pop_back()
 }
 
 // ::setters
@@ -198,11 +228,10 @@ public(package) fun occupy_planet(
     randomizer: &mut RandomGenerator,
     ctx: &mut TxContext,
 ): PlanetCap {
-    let random_element = randomizer.generate_u64_in_range(1, 3);
-    randomizer.shuffle<PlanetInfo>(borrow_free_planets_mut(self));
-    let info = borrow_free_planets_mut(self).pop_back();
+    let info = get_free_planet(self, randomizer);
     planet::create_and_share_planet(
         info,
+        self.info.systems,
         erb_source,
         lan_source,
         tho_source,

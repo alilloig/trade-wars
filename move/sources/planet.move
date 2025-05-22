@@ -74,6 +74,8 @@ public struct Planet has key {
     id: UID,
     /// Coordinates and location information
     info: PlanetInfo,
+    /// The size of the system this planet is in
+    system_size: u8,
     /// The erbium mine that produces elements of type ERBIUM
     erbium_mine: ElementMine<ERBIUM>,
     /// Balance of erbium stored on the planet
@@ -92,6 +94,7 @@ public struct Planet has key {
 /// Creates a new Planet and shares it, returning a capability to control it
 public(package) fun create_and_share_planet(
     info: PlanetInfo,
+    system_size: u8,
     erbium_source: &UniverseElementSource<ERBIUM>,
     lanthanum_source: &UniverseElementSource<LANTHANUM>,
     thorium_source: &UniverseElementSource<THORIUM>,
@@ -100,6 +103,7 @@ public(package) fun create_and_share_planet(
     let planet = Planet {
         id: object::new(ctx),
         info: info,
+        system_size: system_size,
         erbium_mine: element_mine::create_mine<ERBIUM>(erbium_source),
         erbium_store: balance::zero<ERBIUM>(),
         lanthanum_mine: element_mine::create_mine<LANTHANUM>(lanthanum_source),
@@ -112,45 +116,7 @@ public(package) fun create_and_share_planet(
     cap
 }
 
-/// Verifies that the capability has authority over this planet
-fun check_overseer_authority(self: &Planet, cap: &PlanetCap): bool {
-    object::id(self) == cap.planet
-}
-
-/// Extracts erbium from an erbium planet's mine
-public(package) fun extract_erbium(
-    self: &mut Planet,
-    cap: &PlanetCap,
-    source: &mut UniverseElementSource<ERBIUM>,
-    c: &Clock,
-) {
-    assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    self.erbium_store.join<ERBIUM>(self.erbium_mine.extract<ERBIUM>(source, c.timestamp_ms()));
-}
-
-/// Extracts lanthanum from a lanthanum planet's mine
-public(package) fun extract_lanthanum(
-    self: &mut Planet,
-    cap: &PlanetCap,
-    source: &mut UniverseElementSource<LANTHANUM>,
-    c: &Clock,
-) {
-    assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    self.lanthanum_store.join<LANTHANUM>(self.lanthanum_mine.extract<LANTHANUM>(source, c.timestamp_ms()));
-}
-
-/// Extracts thorium from a thorium planet's mine
-public(package) fun extract_thorium(
-    self: &mut Planet,
-    cap: &PlanetCap,
-    source: &mut UniverseElementSource<THORIUM>,
-    c: &Clock,
-) {
-    assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    self.thorium_store.join<THORIUM>(self.thorium_mine.extract<THORIUM>(source, c.timestamp_ms()));
-}
-
-/// Upgrades a planet's mine to increase its production
+/// Upgrades a planet's erbium mine to increase its production
 public(package) fun upgrade_erbium_mine(
     self: &mut Planet,
     cap: &PlanetCap,
@@ -159,9 +125,9 @@ public(package) fun upgrade_erbium_mine(
     tho_source: &mut UniverseElementSource<THORIUM>,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    let erb = self.erbium_store.split<ERBIUM>(self.erbium_mine.get_upgrade_erbium_cost());
-    let lan = self.lanthanum_store.split<LANTHANUM>(self.lanthanum_mine.get_upgrade_lanthanum_cost());
-    let tho = self.thorium_store.split<THORIUM>(self.thorium_mine.get_upgrade_thorium_cost());
+    let erb = self.erbium_store.split<ERBIUM>(self.erbium_mine.erbium_upgrade_cost());
+    let lan = self.lanthanum_store.split<LANTHANUM>(self.lanthanum_mine.lanthanum_upgrade_cost());
+    let tho = self.thorium_store.split<THORIUM>(self.thorium_mine.thorium_upgrade_cost());
     self.erbium_mine.upgrade_mine(erb_source, erb, lan_source, lan, tho_source, tho);
 }
 
@@ -174,9 +140,9 @@ public(package) fun upgrade_lanthanum_mine(
     tho_source: &mut UniverseElementSource<THORIUM>,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    let erb = self.erbium_store.split<ERBIUM>(self.erbium_mine.get_upgrade_erbium_cost());
-    let lan = self.lanthanum_store.split<LANTHANUM>(self.lanthanum_mine.get_upgrade_lanthanum_cost());
-    let tho = self.thorium_store.split<THORIUM>(self.thorium_mine.get_upgrade_thorium_cost());
+    let erb = self.erbium_store.split<ERBIUM>(self.erbium_mine.erbium_upgrade_cost());
+    let lan = self.lanthanum_store.split<LANTHANUM>(self.lanthanum_mine.lanthanum_upgrade_cost());
+    let tho = self.thorium_store.split<THORIUM>(self.thorium_mine.thorium_upgrade_cost());
     self.lanthanum_mine.upgrade_mine(erb_source, erb, lan_source, lan, tho_source, tho);
 }
 
@@ -189,12 +155,13 @@ public(package) fun upgrade_thorium_mine(
     tho_source: &mut UniverseElementSource<THORIUM>,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    let erb = self.erbium_store.split<ERBIUM>(self.erbium_mine.get_upgrade_erbium_cost());
-    let lan = self.lanthanum_store.split<LANTHANUM>(self.lanthanum_mine.get_upgrade_lanthanum_cost());
-    let tho = self.thorium_store.split<THORIUM>(self.thorium_mine.get_upgrade_thorium_cost());
+    let erb = self.erbium_store.split<ERBIUM>(self.erbium_mine.erbium_upgrade_cost());
+    let lan = self.lanthanum_store.split<LANTHANUM>(self.lanthanum_mine.lanthanum_upgrade_cost());
+    let tho = self.thorium_store.split<THORIUM>(self.thorium_mine.thorium_upgrade_cost());
     self.thorium_mine.upgrade_mine(erb_source, erb, lan_source, lan, tho_source, tho);
 }
 
+/// Returns a display for the planet
 public(package) fun get_planet_display(
     publisher: &Publisher,
     ctx: &mut TxContext,
@@ -224,20 +191,20 @@ public(package) fun get_planet_display(
         b"{info.system}".to_string(),
         b"{info.position}".to_string(),
         b"{erbium_store.value<ERBIUM>()}".to_string(),
-        b"{erbium_mine.get_level()}".to_string(),
-        b"{erbium_mine.get_upgrade_erbium_cost()}".to_string(),
-        b"{erbium_mine.get_upgrade_lanthanum_cost()}".to_string(),
-        b"{erbium_mine.get_upgrade_thorium_cost()}".to_string(),
+        b"{erbium_mine.level()}".to_string(),
+        b"{erbium_mine.erbium_upgrade_cost()}".to_string(),
+        b"{erbium_mine.lanthanum_upgrade_cost()}".to_string(),
+        b"{erbium_mine.thorium_upgrade_cost()}".to_string(),
         b"{lanthanum_store.value<LANTHANUM>()}".to_string(),
-        b"{lanthanum_mine.get_level()}".to_string(),
-        b"{lanthanum_mine.get_upgrade_erbium_cost()}".to_string(),
-        b"{lanthanum_mine.get_upgrade_lanthanum_cost()}".to_string(),
-        b"{lanthanum_mine.get_upgrade_thorium_cost()}".to_string(),
+        b"{lanthanum_mine.level()}".to_string(),
+        b"{lanthanum_mine.erbium_upgrade_cost()}".to_string(),
+        b"{lanthanum_mine.lanthanum_upgrade_cost()}".to_string(),
+        b"{lanthanum_mine.thorium_upgrade_cost()}".to_string(),
         b"{thorium_store.value<THORIUM>()}".to_string(),
-        b"{thorium_mine.get_level()}".to_string(),
-        b"{thorium_mine.get_upgrade_erbium_cost()}".to_string(),
-        b"{thorium_mine.get_upgrade_lanthanum_cost()}".to_string(),
-        b"{thorium_mine.get_upgrade_thorium_cost()}".to_string(),
+        b"{thorium_mine.level()}".to_string(),
+        b"{thorium_mine.erbium_upgrade_cost()}".to_string(),
+        b"{thorium_mine.lanthanum_upgrade_cost()}".to_string(),
+        b"{thorium_mine.thorium_upgrade_cost()}".to_string(),
     ];
     display::new_with_fields<Planet>(
         publisher,
@@ -254,4 +221,8 @@ public(package) fun get_planet_display(
 // === Admin Functions ===
 // === Package Functions ===
 // === Private Functions ===
+/// Verifies that the capability has authority over this planet
+fun check_overseer_authority(self: &Planet, cap: &PlanetCap): bool {
+    object::id(self) == cap.planet
+}
 // === Test Functions ===

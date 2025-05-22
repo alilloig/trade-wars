@@ -348,116 +348,42 @@ entry fun set_universe_creation_fees(
     info.universe_creation_price = price;
 }
 
-/// Sets the production parameters for erbium mines
-entry fun set_erbium_mines_production<ERBIUM>(
-    self: &mut ElementSource<ERBIUM>,
+/// Sets the refill quantity for T mines
+entry fun set_sources_refill_qty<T>(
+    self: &mut ElementSource<T>,
+    _cap: &GameAdminCap,
+    refill_qty: u64,
+) {
+    element_source::set_sources_refill_qty<T>(self, refill_qty);
+}
+
+/// Sets the refill threshold for T mines
+entry fun set_sources_refill_threshold<T>(
+    self: &mut ElementSource<T>,
+    _cap: &GameAdminCap,
+    refill_threshold: u64,
+) {
+    element_source::set_sources_refill_threshold<T>(self, refill_threshold);
+}
+
+/// Sets the parameters for T mines
+entry fun set_mines_parameters<T>(
+    self: &mut ElementSource<T>,
     _cap: &GameAdminCap,
     production: u64,
     erb_upgrade_cost: u64,
     lan_upgrade_cost: u64,
     tho_upgrade_cost: u64,
 ) {
-    element_source::set_mine_parameters(
+    element_source::set_mine_parameters<T>(
         self,
-        mine_configuration_parameters::create_mine_configuration_parameters<ERBIUM>(
+        mine_configuration_parameters::create_mine_configuration_parameters<T>(
             production,
             erb_upgrade_cost,
             lan_upgrade_cost,
             tho_upgrade_cost,
         ),
     );
-}
-
-/// Sets the refill quantity for erbium mines
-entry fun set_erbium_mines_refill_qty<ERBIUM>(
-    self: &mut ElementSource<ERBIUM>,
-    _cap: &GameAdminCap,
-    refill_qty: u64,
-) {
-    element_source::set_sources_refill_qty(self, refill_qty);
-}
-
-/// Sets the refill threshold for erbium mines
-entry fun set_erbium_mines_refill_threshold<ERBIUM>(
-    self: &mut ElementSource<ERBIUM>,
-    _cap: &GameAdminCap,
-    refill_threshold: u64,
-) {
-    element_source::set_sources_refill_threshold(self, refill_threshold);
-}
-
-/// Sets the production parameters for lanthanum mines
-entry fun set_lanthanum_mines_production<LANTHANUM>(
-    self: &mut ElementSource<LANTHANUM>,
-    _cap: &GameAdminCap,
-    production: u64,
-    lan_upgrade_cost: u64,
-    tho_upgrade_cost: u64,
-) {
-    element_source::set_mine_parameters(
-        self,
-        mine_configuration_parameters::create_mine_configuration_parameters<LANTHANUM>(
-            production,
-            lan_upgrade_cost,
-            lan_upgrade_cost,
-            tho_upgrade_cost,
-        ),
-    );
-}
-
-/// Sets the refill quantity for lanthanum mines
-entry fun set_lanthanum_mines_refill_qty<LANTHANUM>(
-    self: &mut ElementSource<LANTHANUM>,
-    _cap: &GameAdminCap,
-    refill_qty: u64,
-) {
-    element_source::set_sources_refill_qty(self, refill_qty);
-}
-
-/// Sets the refill threshold for lanthanum mines
-entry fun set_lanthanum_mines_refill_threshold<LANTHANUM>(
-    self: &mut ElementSource<LANTHANUM>,
-    _cap: &GameAdminCap,
-    refill_threshold: u64,
-) {
-    element_source::set_sources_refill_threshold(self, refill_threshold);
-}
-
-/// Sets the production parameters for thorium mines
-entry fun set_thorium_mines_production<THORIUM>(
-    self: &mut ElementSource<THORIUM>,
-    _cap: &GameAdminCap,
-    production: u64,
-    erb_upgrade_cost: u64,
-    lan_upgrade_cost: u64,
-) {
-    element_source::set_mine_parameters(
-        self,
-        mine_configuration_parameters::create_mine_configuration_parameters<THORIUM>(
-            production,
-            erb_upgrade_cost,
-            lan_upgrade_cost,
-            lan_upgrade_cost,
-        ),
-    );
-}
-
-/// Sets the refill quantity for thorium mines
-entry fun set_thorium_mines_refill_qty<THORIUM>(
-    self: &mut ElementSource<THORIUM>,
-    _cap: &GameAdminCap,
-    refill_qty: u64,
-) {
-    element_source::set_sources_refill_qty(self, refill_qty);
-}
-
-/// Sets the refill threshold for thorium mines
-entry fun set_thorium_mines_refill_threshold<THORIUM>(
-    self: &mut ElementSource<THORIUM>,
-    _cap: &GameAdminCap,
-    refill_threshold: u64,
-) {
-    element_source::set_sources_refill_threshold(self, refill_threshold);
 }
 
 // === Events ===
