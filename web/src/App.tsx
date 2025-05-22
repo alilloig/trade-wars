@@ -56,8 +56,6 @@ function App() {
         py="2"
         justify="between"
         style={{
-          borderBottom: "1px solid var(--gray-a2)",
-          height: "60px", // Fixed header height
           width: "100%",
           backgroundColor: "var(--color-background)",
           opacity: 1
@@ -65,7 +63,12 @@ function App() {
       >
         <Box>
           <Heading 
-            style={{ cursor: 'pointer' }} 
+            style={{ 
+              cursor: 'pointer',
+              fontFamily: 'Orbitron, sans-serif',
+              fontWeight: '700',
+              fontOpticalSizing: 'auto'
+            }} 
             onClick={() => setCurrentPage({ type: 'home' })}
           >
             Trade Wars

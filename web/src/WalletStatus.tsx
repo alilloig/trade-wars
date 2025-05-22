@@ -41,16 +41,16 @@ export function WalletStatus({ onSelectObject }: WalletStatusProps) {
               }} 
             />
           </Box>
-          <Container my="4" px="4">
-            <Heading mb="4" size="6" weight="bold" style={{ color: "#d4af37" }}>
+          <Container my="4" px="4" style={{fontFamily: 'Orbitron, sans-serif',}}>
+            <Heading mb="4" size="6" weight="bold" style={{ color: "#d4af37", fontFamily: 'Orbitron, sans-serif', }}>
               In the vast darkness of the far future, there is only trade
             </Heading>
             
-            <Text mb="4" size="3" weight="bold" style={{ lineHeight: "1.6", color: "#e0e0e0" }}>
+            <Text mb="4" size="3" weight="bold" style={{ lineHeight: "1.6", color: "#e0e0e0",  }}>
               Humanity nearly drove itself to extinction during the Last War. Ironically, it was a war invention—Nova, the ultimate fuel enabling fast interplanetary travel—that allowed the last remnants of humanity to leave the Ruined Earth and begin settling other planets. The Company, creators of Nova, retained a monopoly over it, securing tribute from the flourishing human empires born from interstellar expansion. By strictly controlling Nova production, the Company ensures that no rival empire gains enough power to wage war again. Instead, all empires devote themselves to the only god humanity has consistently worshipped: trade.
             </Text>
 
-            <Heading mb="3" size="5" weight="bold" style={{ color: "#d4af37" }}>
+            <Heading mt="3" mb="3" size="5" weight="bold" style={{ color: "#d4af37", fontFamily: 'Orbitron, sans-serif', }}>
               Gameplay
             </Heading>
             
