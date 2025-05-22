@@ -57,6 +57,7 @@ function App() {
         px="4"
         py="2"
         justify="between"
+        align="center"
         style={{
           backgroundColor: "var(--color-background)",
           opacity: 1,
@@ -70,7 +71,9 @@ function App() {
               cursor: 'pointer',
               fontFamily: 'Orbitron, sans-serif',
               fontWeight: '700',
-              fontOpticalSizing: 'auto'
+              fontOpticalSizing: 'auto',
+              margin: 0,
+              lineHeight: 1
             }} 
             onClick={() => setCurrentPage({ type: 'home' })}
           >
