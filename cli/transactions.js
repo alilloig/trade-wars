@@ -7,6 +7,7 @@ dotenv.config();
 
 const GAME_ADMIN_SECRET_KEY = process.env.GAME_ADMIN_SECRET_KEY;
 const GAME_ADMIN_ADDRESS = process.env.GAME_ADMIN_ADDRESS;
+const TRADE_WARS_PKG = process.env.TRADE_WARS_PKG;
 const TRADE_WARS_ID = process.env.TRADE_WARS_ID;
 const ADM_CAP_ID = process.env.ADM_CAP_ID;
 const ERB_CAP_ID = process.env.ERB_CAP_ID;
@@ -22,7 +23,7 @@ const client = new SuiClient({ url: getFullnodeUrl('devnet') });
 // Create element sources transaction
 const sources_tx = new Transaction();
 // Construct the method name string
-let createElementSourcesCall = TRADE_WARS_ID+'::trade_wars::create_element_sources';
+let createElementSourcesCall = TRADE_WARS_PKG+'::trade_wars::create_element_sources';
 
 // Add a moveCall to the transaction
 sources_tx.moveCall({
@@ -50,7 +51,7 @@ export const sources = await client.signAndExecuteTransaction({
 // Start universe transaction
 const start_universe_tx = new Transaction();
 // Construct the method name string
-let startUniverseCall = TRADE_WARS_ID+'::trade_wars::admin_start_universe';
+let startUniverseCall = TRADE_WARS_PKG+'::trade_wars::admin_start_universe';
 // Add a moveCall to the transaction
 start_universe_tx.moveCall({
 	target: startUniverseCall,
@@ -67,6 +68,7 @@ start_universe_tx.moveCall({
         start_universe_tx.object.clock()
     ],
 });
+
 // Sign and execute the transaction
 export const universe = await client.signAndExecuteTransaction({
 	transaction: start_universe_tx,
