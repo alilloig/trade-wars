@@ -244,6 +244,7 @@ entry fun public_start_universe(
     galaxies: u8,
     systems: u8,
     planets: u8,
+    open: bool,
     payment: Coin<SUI>,
     clock: &Clock,
     ctx: &mut TxContext,
@@ -262,6 +263,7 @@ entry fun public_start_universe(
         galaxies,
         systems,
         planets,
+        open,
         clock,
         ctx,
     )
@@ -278,6 +280,7 @@ entry fun admin_start_universe(
     galaxies: u8,
     systems: u8,
     planets: u8,
+    open: bool,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
@@ -291,6 +294,7 @@ entry fun admin_start_universe(
         galaxies,
         systems,
         planets,
+        open,
         clock,
         ctx,
     )
@@ -440,6 +444,7 @@ fun start_universe(
     galaxies: u8,
     systems: u8,
     planets: u8,
+    open: bool,
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
@@ -450,6 +455,7 @@ fun start_universe(
         galaxies,
         systems,
         planets,
+        open,
     );
     // Create a new universe object
     let (mut universe, creator_capability) = universe::create_universe(

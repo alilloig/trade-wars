@@ -63,6 +63,7 @@ public(package) fun create_universe_info(
     galaxies: u8,
     systems: u8,
     planets: u8,
+    open: bool,
 ): UniverseInfo {
     UniverseInfo {
         name,

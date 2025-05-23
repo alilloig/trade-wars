@@ -47,6 +47,9 @@ program
     }
     return num;
   })
+  .option('--open <boolean>', 'Open universe (default: true)', (val) => {
+    return val === 'true';
+  })
   .action(async (options) => {
     try {
       console.log('Starting universe...');
@@ -54,7 +57,8 @@ program
         name: options.name,
         galaxies: options.galaxies,
         systems: options.systems,
-        planets: options.planets
+        planets: options.planets,
+        open: options.open
       });
       console.log('Universe started with digest:', result.digest);
     } catch (error) {

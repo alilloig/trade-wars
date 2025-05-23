@@ -167,7 +167,7 @@ export async function createElementSources() {
 }
 
 // Start universe transaction function
-export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1, planets = 255 } = {}) {
+export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1, planets = 255, open = true } = {}) {
     // Validate parameters (with defaults applied)
     if (!name || typeof name !== 'string') {
         throw new Error('Universe name is required and must be a string');
@@ -231,6 +231,7 @@ export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1,
             start_universe_tx.pure('u8', galaxies),
             start_universe_tx.pure('u8', systems),
             start_universe_tx.pure('u8', planets),
+            start_universe_tx.pure('bool', false),
             start_universe_tx.object.clock()
         ],
     });
