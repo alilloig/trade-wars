@@ -1,11 +1,12 @@
 move/build/
 move/Move.lock
+move/.DS_Store
 web/node_modules/
 web/.vite
+web/.DS_Store
 cli/node_modules/
 cli/.env
-cli/.env.backup
-cli/tx_notes.js
 cli/tx-digests.json
+cli/.DS_Store
 .vscode/
 .DS_Store

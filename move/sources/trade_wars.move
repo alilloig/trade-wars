@@ -181,7 +181,7 @@ entry fun create_element_sources(
     lan_treasury: TreasuryCap<LANTHANUM>,
     tho_treasury: TreasuryCap<THORIUM>,
     ctx: &mut TxContext,
-): (ID, ID, ID) {
+) {
     // Create the erbium source
     let erb_source = element_source::create_source<ERBIUM>(
         erb_treasury,
@@ -232,7 +232,6 @@ entry fun create_element_sources(
     self.thorium_source.fill(tho_source_id);
     // Share the element source
     transfer::public_share_object(tho_source);
-    (erb_source_id, lan_source_id, tho_source_id)
 }
 
 /// Anyone can call this to start their own universe of the game by paying a fee
@@ -245,10 +244,11 @@ entry fun public_start_universe(
     galaxies: u8,
     systems: u8,
     planets: u8,
+    open: bool,
     payment: Coin<SUI>,
     clock: &Clock,
     ctx: &mut TxContext,
-): (ID, ID, ID, ID) {
+) {
     // Check if the payment is enough
     assert!(payment.value() >= self.universe_creation_price, EUniverseCreationInsufficientPayment);
     // Transfer the payment to the Game vault
@@ -263,6 +263,7 @@ entry fun public_start_universe(
         galaxies,
         systems,
         planets,
+        open,
         clock,
         ctx,
     )
@@ -279,9 +280,10 @@ entry fun admin_start_universe(
     galaxies: u8,
     systems: u8,
     planets: u8,
+    open: bool,
     clock: &Clock,
     ctx: &mut TxContext,
-): (ID, ID, ID, ID) {
+) {
     // Start Universe
     start_universe(
         self,
@@ -292,6 +294,7 @@ entry fun admin_start_universe(
         galaxies,
         systems,
         planets,
+        open,
         clock,
         ctx,
     )
@@ -441,9 +444,10 @@ fun start_universe(
     galaxies: u8,
     systems: u8,
     planets: u8,
+    open: bool,
     clock: &Clock,
     ctx: &mut TxContext,
-): (ID, ID, ID, ID) {
+) {
 
     // Construct the universe info
     let info = universe::create_universe_info(
@@ -451,6 +455,7 @@ fun start_universe(
         galaxies,
         systems,
         planets,
+        open,
     );
     // Create a new universe object
     let (mut universe, creator_capability) = universe::create_universe(
@@ -505,7 +510,6 @@ fun start_universe(
     transfer::public_share_object(universe);
     // Transfer creator capability
     transfer::public_transfer(creator_capability, ctx.sender());
-    (universe_id, universe_erbium_source_id, universe_lanthanum_source_id, universe_thorium_source_id)
 }
 
 // === Test Functions ===
