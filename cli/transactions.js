@@ -99,7 +99,7 @@ export async function createElementSources() {
     const result = await client.signAndExecuteTransaction({
         transaction: sources_tx,
         signer: keypair,
-        requestType: 'WaitForLocalExecution',
+        requestType: 'WaitForEffectsCert',
         options: {
             showEffects: true,
             showEvents: true,
@@ -190,7 +190,7 @@ export async function startUniverse({ name, galaxies, systems, planets }) {
     const result = await client.signAndExecuteTransaction({
         transaction: start_universe_tx,
         signer: keypair,
-        requestType: 'WaitForLocalExecution',
+        requestType: 'WaitForEffectsCert',
         options: {
             showEffects: true,
             showEvents: true,
