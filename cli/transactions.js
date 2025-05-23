@@ -2,7 +2,7 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 import dotenv from 'dotenv';
-import { updateTxDigestsFile } from './update_files.js';
+import { updateTxDigestsFile, updateEnvFile, updateWebEnvFile } from './update_files.js';
 import { execSync } from 'child_process';
 
 dotenv.config();
@@ -111,8 +111,57 @@ export async function createElementSources() {
     console.log('Element sources created successfully!');
     console.log('Transaction digest:', result.digest);
     
+    // Extract created object IDs from the transaction result
+    const createdObjects = result.objectChanges?.filter(change => change.type === 'created') || [];
+    
+    if (createdObjects.length !== 3) {
+        throw new Error(`Expected 3 created objects (ERB, LAN, THO sources), but found ${createdObjects.length}`);
+    }
+    
+    console.log('Created objects:', createdObjects);
+    
+    // Sort objects by objectType to ensure consistent assignment
+    // Assuming the contract creates sources in alphabetical order: ERB, LAN, THO
+    const sortedObjects = createdObjects.sort((a, b) => a.objectType.localeCompare(b.objectType));
+    
+    // Extract object IDs
+    const erbSourceId = sortedObjects[0].objectId;
+    const lanSourceId = sortedObjects[1].objectId;
+    const thoSourceId = sortedObjects[2].objectId;
+    
+    console.log('Source IDs extracted:');
+    console.log('ERB_SOURCE_ID:', erbSourceId);
+    console.log('LAN_SOURCE_ID:', lanSourceId);
+    console.log('THO_SOURCE_ID:', thoSourceId);
+    
+    // Update CLI .env file
+    console.log('\nUpdating CLI .env file...');
+    updateEnvFile({
+        ERB_SOURCE_ID: erbSourceId,
+        LAN_SOURCE_ID: lanSourceId,
+        THO_SOURCE_ID: thoSourceId
+    });
+    
+    // Update web .env file
+    console.log('Updating web .env file...');
+    updateWebEnvFile({
+        VITE_ERB_SOURCE_ID_DEV: erbSourceId,
+        VITE_LAN_SOURCE_ID_DEV: lanSourceId,
+        VITE_THO_SOURCE_ID_DEV: thoSourceId
+    });
+    
     // Update tx-digests.json file
     updateTxDigestsFile('create-sources', result.digest);
+    
+    console.log('\n✅ Element sources created and .env files updated successfully!');
+    console.log('CLI (.env):');
+    console.log(`  ERB_SOURCE_ID=${erbSourceId}`);
+    console.log(`  LAN_SOURCE_ID=${lanSourceId}`);
+    console.log(`  THO_SOURCE_ID=${thoSourceId}`);
+    console.log('\nWeb (.env):');
+    console.log(`  VITE_ERB_SOURCE_ID_DEV=${erbSourceId}`);
+    console.log(`  VITE_LAN_SOURCE_ID_DEV=${lanSourceId}`);
+    console.log(`  VITE_THO_SOURCE_ID_DEV=${thoSourceId}`);
     
     return result;
 }
