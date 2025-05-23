@@ -1,6 +1,6 @@
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Container, Flex, Heading, Text, Box } from "@radix-ui/themes";
-import { OwnedObjects } from "./OwnedObjects";
+import { OverseerObjects } from "./OverseerObjects";
 
 interface WalletStatusProps {
   onSelectObject?: (id: string) => void;
@@ -13,12 +13,7 @@ export function WalletStatus({ onSelectObject }: WalletStatusProps) {
     <>
       {account ? (
         <Container my="2">
-          <Heading mb="2">Wallet Status</Heading>
-          <Flex direction="column">
-            <Text>Wallet connected</Text>
-            <Text>Address: {account.address}</Text>
-          </Flex>
-          <OwnedObjects onSelectObject={onSelectObject} />
+          <OverseerObjects onSelectObject={onSelectObject} />
         </Container>
       ) : (
         <>
