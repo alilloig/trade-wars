@@ -4,6 +4,7 @@ move/.DS_Store
 web/node_modules/
 web/.vite
 web/.DS_Store
+web/dist/
 cli/node_modules/
 cli/.env
 cli/tx-digests.json

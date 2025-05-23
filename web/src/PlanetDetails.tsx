@@ -52,7 +52,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
 
   // Query the planet object for refetching after upgrades
-  const { isPending: planetPending, error: planetError, refetch: planetRefetch } = useSuiClientQuery(
+  const { isPending: planetPending, error: planetError } = useSuiClientQuery(
     "getObject",
     {
       id: planetId,
@@ -82,164 +82,99 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
     },
   );
 
-  // Helper function to create devInspect transaction for planet data
-  const createPlanetDataTransaction = (functionName: string) => {
+  // Create a single PTB with all planet getter function calls
+  const createPlanetDataTransaction = () => {
     const tx = new Transaction();
     const now = Date.now(); // Current timestamp in milliseconds
     
+    // Reserves (need timestamp)
     tx.moveCall({
-      target: `${packageId}::planet::${functionName}`,
-      arguments: functionName.includes('reserves') 
-        ? [tx.object(planetId), tx.pure.u64(now)]
-        : [tx.object(planetId)]
+      target: `${packageId}::planet::get_erbium_reserves`,
+      arguments: [tx.object(planetId), tx.pure.u64(now)]
     });
+    tx.moveCall({
+      target: `${packageId}::planet::get_lanthanum_reserves`,
+      arguments: [tx.object(planetId), tx.pure.u64(now)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_thorium_reserves`,
+      arguments: [tx.object(planetId), tx.pure.u64(now)]
+    });
+
+    // Mine levels (no timestamp needed)
+    tx.moveCall({
+      target: `${packageId}::planet::get_erbium_mine_level`,
+      arguments: [tx.object(planetId)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_lanthanum_mine_level`,
+      arguments: [tx.object(planetId)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_thorium_mine_level`,
+      arguments: [tx.object(planetId)]
+    });
+
+    // Erbium mine upgrade costs
+    tx.moveCall({
+      target: `${packageId}::planet::get_erbium_mine_erbium_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_erbium_mine_lanthanum_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_erbium_mine_thorium_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+
+    // Lanthanum mine upgrade costs
+    tx.moveCall({
+      target: `${packageId}::planet::get_lanthanum_mine_erbium_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_lanthanum_mine_lanthanum_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_lanthanum_mine_thorium_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+
+    // Thorium mine upgrade costs
+    tx.moveCall({
+      target: `${packageId}::planet::get_thorium_mine_erbium_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_thorium_mine_lanthanum_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+    tx.moveCall({
+      target: `${packageId}::planet::get_thorium_mine_thorium_upgrade_cost`,
+      arguments: [tx.object(planetId)]
+    });
+    
     return tx;
   };
 
-  // Query planet reserves and levels using devInspect
-  const { data: erbiumReservesData } = useSuiClientQuery(
+  // Single query for all planet data
+  const { data: planetDataResult, refetch: planetDataRefetch } = useSuiClientQuery(
     "devInspectTransactionBlock",
     {
-      transactionBlock: createPlanetDataTransaction("get_erbium_reserves"),
+      transactionBlock: createPlanetDataTransaction(),
       sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
     },
     { enabled: !!planetId && !!packageId && !!account },
   );
 
-  const { data: lanthanumReservesData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_lanthanum_reserves"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: thoriumReservesData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_thorium_reserves"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: erbiumMineLevelData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_erbium_mine_level"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: lanthanumMineLevelData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_lanthanum_mine_level"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: thoriumMineLevelData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_thorium_mine_level"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  // Upgrade cost queries for erbium mine
-  const { data: erbiumMineErbiumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_erbium_mine_erbium_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: erbiumMineLanthanumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_erbium_mine_lanthanum_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: erbiumMineThoriumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_erbium_mine_thorium_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  // Upgrade cost queries for lanthanum mine
-  const { data: lanthanumMineErbiumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_lanthanum_mine_erbium_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: lanthanumMineLanthanumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_lanthanum_mine_lanthanum_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: lanthanumMineThoriumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_lanthanum_mine_thorium_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  // Upgrade cost queries for thorium mine
-  const { data: thoriumMineErbiumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_thorium_mine_erbium_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: thoriumMineLanthanumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_thorium_mine_lanthanum_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  const { data: thoriumMineThoriumCostData } = useSuiClientQuery(
-    "devInspectTransactionBlock",
-    {
-      transactionBlock: createPlanetDataTransaction("get_thorium_mine_thorium_upgrade_cost"),
-      sender: account?.address || "0x0000000000000000000000000000000000000000000000000000000000000000"
-    },
-    { enabled: !!planetId && !!packageId && !!account },
-  );
-
-  // Helper function to parse u64 from devInspect result
-  const parseU64FromDevInspect = (data: any): number => {
+  // Helper function to parse u64 from specific result index
+  const parseU64FromResultIndex = (data: any, index: number): number => {
     try {
-      if (data?.results?.[0]?.returnValues?.[0]) {
-        const returnValue = data.results[0].returnValues[0];
+      if (data?.results?.[index]?.returnValues?.[0]) {
+        const returnValue = data.results[index].returnValues[0];
         if (Array.isArray(returnValue) && returnValue.length >= 2) {
           const bytesData = returnValue[0];
           if (Array.isArray(bytesData) && bytesData.length === 8) {
@@ -253,51 +188,48 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
         }
       }
     } catch (error) {
-      console.error('Error parsing u64:', error);
+      console.error(`Error parsing u64 at index ${index}:`, error);
     }
     return 0;
   };
 
-  // Update state when data changes
+  // Update state when planetDataResult changes
   useEffect(() => {
-    setPlanetReserves({
-      erbium: parseU64FromDevInspect(erbiumReservesData),
-      lanthanum: parseU64FromDevInspect(lanthanumReservesData),
-      thorium: parseU64FromDevInspect(thoriumReservesData)
-    });
-  }, [erbiumReservesData, lanthanumReservesData, thoriumReservesData]);
+    if (planetDataResult) {
+      // Parse reserves (indices 0, 1, 2)
+      setPlanetReserves({
+        erbium: parseU64FromResultIndex(planetDataResult, 0),
+        lanthanum: parseU64FromResultIndex(planetDataResult, 1),
+        thorium: parseU64FromResultIndex(planetDataResult, 2)
+      });
 
-  useEffect(() => {
-    setMineLevels({
-      erbium: parseU64FromDevInspect(erbiumMineLevelData),
-      lanthanum: parseU64FromDevInspect(lanthanumMineLevelData),
-      thorium: parseU64FromDevInspect(thoriumMineLevelData)
-    });
-  }, [erbiumMineLevelData, lanthanumMineLevelData, thoriumMineLevelData]);
+      // Parse mine levels (indices 3, 4, 5)
+      setMineLevels({
+        erbium: parseU64FromResultIndex(planetDataResult, 3),
+        lanthanum: parseU64FromResultIndex(planetDataResult, 4),
+        thorium: parseU64FromResultIndex(planetDataResult, 5)
+      });
 
-  useEffect(() => {
-    setUpgradeCosts({
-      erbium: {
-        erbium: parseU64FromDevInspect(erbiumMineErbiumCostData),
-        lanthanum: parseU64FromDevInspect(erbiumMineLanthanumCostData),
-        thorium: parseU64FromDevInspect(erbiumMineThoriumCostData)
-      },
-      lanthanum: {
-        erbium: parseU64FromDevInspect(lanthanumMineErbiumCostData),
-        lanthanum: parseU64FromDevInspect(lanthanumMineLanthanumCostData),
-        thorium: parseU64FromDevInspect(lanthanumMineThoriumCostData)
-      },
-      thorium: {
-        erbium: parseU64FromDevInspect(thoriumMineErbiumCostData),
-        lanthanum: parseU64FromDevInspect(thoriumMineLanthanumCostData),
-        thorium: parseU64FromDevInspect(thoriumMineThoriumCostData)
-      }
-    });
-  }, [
-    erbiumMineErbiumCostData, erbiumMineLanthanumCostData, erbiumMineThoriumCostData,
-    lanthanumMineErbiumCostData, lanthanumMineLanthanumCostData, lanthanumMineThoriumCostData,
-    thoriumMineErbiumCostData, thoriumMineLanthanumCostData, thoriumMineThoriumCostData
-  ]);
+      // Parse upgrade costs (indices 6-14)
+      setUpgradeCosts({
+        erbium: {
+          erbium: parseU64FromResultIndex(planetDataResult, 6),     // get_erbium_mine_erbium_upgrade_cost
+          lanthanum: parseU64FromResultIndex(planetDataResult, 7),  // get_erbium_mine_lanthanum_upgrade_cost
+          thorium: parseU64FromResultIndex(planetDataResult, 8)     // get_erbium_mine_thorium_upgrade_cost
+        },
+        lanthanum: {
+          erbium: parseU64FromResultIndex(planetDataResult, 9),     // get_lanthanum_mine_erbium_upgrade_cost
+          lanthanum: parseU64FromResultIndex(planetDataResult, 10), // get_lanthanum_mine_lanthanum_upgrade_cost
+          thorium: parseU64FromResultIndex(planetDataResult, 11)    // get_lanthanum_mine_thorium_upgrade_cost
+        },
+        thorium: {
+          erbium: parseU64FromResultIndex(planetDataResult, 12),    // get_thorium_mine_erbium_upgrade_cost
+          lanthanum: parseU64FromResultIndex(planetDataResult, 13), // get_thorium_mine_lanthanum_upgrade_cost
+          thorium: parseU64FromResultIndex(planetDataResult, 14)    // get_thorium_mine_thorium_upgrade_cost
+        }
+      });
+    }
+  }, [planetDataResult]);
 
   // Helper function to check if upgrade is affordable
   const canAffordUpgrade = (mineType: 'erbium' | 'lanthanum' | 'thorium'): boolean => {
@@ -377,7 +309,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
             
             // Add delay to ensure blockchain indexing before refetch
             setTimeout(() => {
-              planetRefetch();
+              planetDataRefetch();
               setIsUpgrading(null);
               setUpgradeStatus("");
             }, 2000);
