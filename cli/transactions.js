@@ -61,7 +61,34 @@ function updateEnvFile(newValues) {
 
 // Create element sources transaction function
 export async function createElementSources() {
+    // Validate that all required environment variables are set
+    const requiredEnvVars = {
+        TRADE_WARS_PKG,
+        TRADE_WARS_ID,
+        ADM_CAP_ID,
+        ERB_CAP_ID,
+        LAN_CAP_ID,
+        THO_CAP_ID
+    };
+    
+    for (const [name, value] of Object.entries(requiredEnvVars)) {
+        if (!value) {
+            throw new Error(`Missing required environment variable: ${name}`);
+        }
+    }
+    
+    console.log('Using environment variables:');
+    console.log('TRADE_WARS_ID:', TRADE_WARS_ID);
+    console.log('ADM_CAP_ID:', ADM_CAP_ID);
+    console.log('ERB_CAP_ID:', ERB_CAP_ID);
+    console.log('LAN_CAP_ID:', LAN_CAP_ID);
+    console.log('THO_CAP_ID:', THO_CAP_ID);
+    
     const sources_tx = new Transaction();
+    
+    // Set explicit gas budget (100 million MIST = 0.1 SUI)
+    // sources_tx.setGasBudget(100000000);
+    
     // Construct the method name string
     let createElementSourcesCall = TRADE_WARS_PKG+'::trade_wars::create_element_sources';
 
@@ -143,6 +170,10 @@ export async function startUniverse() {
     console.log('THO_SOURCE_ID:', THO_SOURCE_ID);
 
     const start_universe_tx = new Transaction();
+    
+    // Set explicit gas budget (100 million MIST = 0.1 SUI)
+    // start_universe_tx.setGasBudget(100000000);
+    
     // Construct the method name string
     let startUniverseCall = TRADE_WARS_PKG+'::trade_wars::admin_start_universe';
     
