@@ -2,6 +2,7 @@
 
 import { program } from "commander";
 import { createElementSources, startUniverse, openUniverse, closeUniverse } from './transactions.js';
+import { publishPackage } from "./publish.js";
 
 program
   .version("1.0.0")
@@ -23,28 +24,31 @@ program
 
 program
   .command('start-universe')
-  .description('Start a new universe (requires sources to be created first)')
-  .requiredOption('--name <name>', 'Universe name')
-  .requiredOption('--galaxies <number>', 'Number of galaxies (1-255)', (val) => {
+  .description('Start a new universe (requires sources to be created first). Defaults: name=alpha, galaxies=1, systems=1, planets=255')
+  .option('--name <name>', 'Universe name (default: alpha)')
+  .option('--galaxies <number>', 'Number of galaxies (1-255, default: 1)', (val) => {
     const num = parseInt(val, 10);
     if (isNaN(num) || num < 1 || num > 255) {
       throw new Error('Galaxies must be a number between 1 and 255');
     }
     return num;
   })
-  .requiredOption('--systems <number>', 'Number of systems (1-255)', (val) => {
+  .option('--systems <number>', 'Number of systems (1-255, default: 1)', (val) => {
     const num = parseInt(val, 10);
     if (isNaN(num) || num < 1 || num > 255) {
       throw new Error('Systems must be a number between 1 and 255');
     }
     return num;
   })
-  .requiredOption('--planets <number>', 'Number of planets (1-255)', (val) => {
+  .option('--planets <number>', 'Number of planets (1-255, default: 255)', (val) => {
     const num = parseInt(val, 10);
     if (isNaN(num) || num < 1 || num > 255) {
       throw new Error('Planets must be a number between 1 and 255');
     }
     return num;
+  })
+  .option('--open <boolean>', 'Open universe (default: true)', (val) => {
+    return val === 'true';
   })
   .action(async (options) => {
     try {
@@ -53,7 +57,8 @@ program
         name: options.name,
         galaxies: options.galaxies,
         systems: options.systems,
-        planets: options.planets
+        planets: options.planets,
+        open: options.open
       });
       console.log('Universe started with digest:', result.digest);
     } catch (error) {
@@ -96,6 +101,25 @@ program
       console.log('Universe closed with digest:', result.digest);
     } catch (error) {
       console.error('Error closing universe:', error.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('publish')
+  .description('Publish the Move package and update environment files')
+  .option('--package-path <path>', 'Path to the Move package directory', '../move')
+  .action(async (options) => {
+    try {
+      console.log('Publishing Move package...');
+      const result = await publishPackage({
+        packagePath: options.packagePath
+      });
+      console.log('\n🎉 Package published successfully!');
+      console.log('Package ID:', result.packageId);
+      console.log('Transaction Digest:', result.transactionDigest);
+    } catch (error) {
+      console.error('Error publishing package:', error.message);
       process.exit(1);
     }
   });

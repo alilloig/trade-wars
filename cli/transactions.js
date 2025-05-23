@@ -2,8 +2,8 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
+import { updateTxDigestsFile, updateEnvFile, updateWebEnvFile } from './update_files.js';
+import { execSync } from 'child_process';
 
 dotenv.config();
 
@@ -25,70 +25,31 @@ function getClientAndKeypair() {
     // Keypair from an existing secret key (Uint8Array)
     const keypair = Ed25519Keypair.fromSecretKey(GAME_ADMIN_SECRET_KEY);
 
+    // Get the active environment from sui client
+    let activeEnv;
+    try {
+        const output = execSync('sui client active-env', { encoding: 'utf8' });
+        // Extract the environment name from the output (remove warnings and whitespace)
+        activeEnv = output.split('\n').find(line => 
+            line.trim() && 
+            !line.includes('warning') && 
+            !line.includes('Client/Server')
+        )?.trim();
+        
+        if (!activeEnv) {
+            throw new Error('Could not determine active environment');
+        }
+    } catch (error) {
+        console.warn('Failed to get active environment, falling back to devnet:', error.message);
+        activeEnv = 'devnet';
+    }
+
+    console.log(`Using Sui environment: ${activeEnv}`);
+
     // create a new SuiClient object pointing to the network you want to use
-    const client = new SuiClient({ url: getFullnodeUrl('devnet') });
+    const client = new SuiClient({ url: getFullnodeUrl(activeEnv) });
     
     return { client, keypair };
-}
-
-// Function to update .env file with new values
-function updateEnvFile(newValues) {
-    const envPath = path.resolve('.env');
-    let envContent = '';
-    
-    try {
-        envContent = fs.readFileSync(envPath, 'utf8');
-    } catch (error) {
-        console.log('Creating new .env file...');
-    }
-    
-    // Parse existing env content
-    const envLines = envContent.split('\n');
-    const envVars = {};
-    
-    envLines.forEach(line => {
-        const trimmedLine = line.trim();
-        if (trimmedLine && !trimmedLine.startsWith('#')) {
-            const [key, ...valueParts] = trimmedLine.split('=');
-            if (key && valueParts.length > 0) {
-                envVars[key.trim()] = valueParts.join('=').trim();
-            }
-        }
-    });
-    
-    // Update with new values
-    Object.assign(envVars, newValues);
-    
-    // Write back to file
-    const newEnvContent = Object.entries(envVars)
-        .map(([key, value]) => `${key}=${value}`)
-        .join('\n');
-    
-    fs.writeFileSync(envPath, newEnvContent);
-    console.log('Updated .env file with new source IDs');
-}
-
-// Function to update tx-digests.json file
-function updateTxDigestsFile(transactionName, digest) {
-    const txDigestsPath = path.resolve('tx-digests.json');
-    let txDigests = {};
-    
-    try {
-        const content = fs.readFileSync(txDigestsPath, 'utf8');
-        txDigests = JSON.parse(content);
-    } catch (error) {
-        console.log('Creating new tx-digests.json file...');
-    }
-    
-    // Add new transaction with current timestamp
-    txDigests[transactionName] = {
-        digest: digest,
-        timestamp: new Date().toISOString()
-    };
-    
-    // Write back to file with proper formatting
-    fs.writeFileSync(txDigestsPath, JSON.stringify(txDigests, null, 4));
-    console.log(`Transaction digest saved to tx-digests.json: ${transactionName}`);
 }
 
 // Create element sources transaction function
@@ -102,7 +63,7 @@ export async function createElementSources() {
         LAN_CAP_ID,
         THO_CAP_ID
     };
-    
+
     for (const [name, value] of Object.entries(requiredEnvVars)) {
         if (!value) {
             throw new Error(`Missing required environment variable: ${name}`);
@@ -119,9 +80,6 @@ export async function createElementSources() {
     const { client, keypair } = getClientAndKeypair();
     
     const sources_tx = new Transaction();
-    
-    // Set explicit gas budget (100 million MIST = 0.1 SUI)
-    // sources_tx.setGasBudget(100000000);
     
     // Construct the method name string
     let createElementSourcesCall = TRADE_WARS_PKG+'::trade_wars::create_element_sources';
@@ -141,7 +99,7 @@ export async function createElementSources() {
     const result = await client.signAndExecuteTransaction({
         transaction: sources_tx,
         signer: keypair,
-        requestType: 'WaitForLocalExecution',
+        requestType: 'WaitForEffectsCert',
         options: {
             showEffects: true,
             showEvents: true,
@@ -153,49 +111,74 @@ export async function createElementSources() {
     console.log('Element sources created successfully!');
     console.log('Transaction digest:', result.digest);
     
-    // Extract the source IDs from the Move call return values
-    // The Move function returns (erb_source_id, lan_source_id, tho_source_id)
-    if (result.effects?.transactionDigest && result.returnValues && result.returnValues.length >= 3) {
-        // Parse the return values - they come as BCS encoded values
-        const erbSourceId = '0x' + Buffer.from(result.returnValues[0][0]).toString('hex');
-        const lanSourceId = '0x' + Buffer.from(result.returnValues[1][0]).toString('hex');
-        const thoSourceId = '0x' + Buffer.from(result.returnValues[2][0]).toString('hex');
-        
-        // Update .env file with the source IDs in correct order
-        updateEnvFile({
-            ERB_SOURCE_ID: erbSourceId,
-            LAN_SOURCE_ID: lanSourceId,
-            THO_SOURCE_ID: thoSourceId
-        });
-        
-        console.log('Source IDs saved to .env (from return values):');
-        console.log('ERB_SOURCE_ID:', erbSourceId);
-        console.log('LAN_SOURCE_ID:', lanSourceId);
-        console.log('THO_SOURCE_ID:', thoSourceId);
-    } else {
-        // Fail to get return values
-        console.warn('Warning: Could not persist source IDs to .env file');
+    // Extract created object IDs from the transaction result
+    const createdObjects = result.objectChanges?.filter(change => change.type === 'created') || [];
+    
+    if (createdObjects.length !== 3) {
+        throw new Error(`Expected 3 created objects (ERB, LAN, THO sources), but found ${createdObjects.length}`);
     }
+    
+    console.log('Created objects:', createdObjects);
+    
+    // Sort objects by objectType to ensure consistent assignment
+    // Assuming the contract creates sources in alphabetical order: ERB, LAN, THO
+    const sortedObjects = createdObjects.sort((a, b) => a.objectType.localeCompare(b.objectType));
+    
+    // Extract object IDs
+    const erbSourceId = sortedObjects[0].objectId;
+    const lanSourceId = sortedObjects[1].objectId;
+    const thoSourceId = sortedObjects[2].objectId;
+    
+    console.log('Source IDs extracted:');
+    console.log('ERB_SOURCE_ID:', erbSourceId);
+    console.log('LAN_SOURCE_ID:', lanSourceId);
+    console.log('THO_SOURCE_ID:', thoSourceId);
+    
+    // Update CLI .env file
+    console.log('\nUpdating CLI .env file...');
+    updateEnvFile({
+        ERB_SOURCE_ID: erbSourceId,
+        LAN_SOURCE_ID: lanSourceId,
+        THO_SOURCE_ID: thoSourceId
+    });
+    
+    // Update web .env file
+    console.log('Updating web .env file...');
+    updateWebEnvFile({
+        VITE_ERB_SOURCE_ID_DEV: erbSourceId,
+        VITE_LAN_SOURCE_ID_DEV: lanSourceId,
+        VITE_THO_SOURCE_ID_DEV: thoSourceId
+    });
     
     // Update tx-digests.json file
     updateTxDigestsFile('create-sources', result.digest);
+    
+    console.log('\n✅ Element sources created and .env files updated successfully!');
+    console.log('CLI (.env):');
+    console.log(`  ERB_SOURCE_ID=${erbSourceId}`);
+    console.log(`  LAN_SOURCE_ID=${lanSourceId}`);
+    console.log(`  THO_SOURCE_ID=${thoSourceId}`);
+    console.log('\nWeb (.env):');
+    console.log(`  VITE_ERB_SOURCE_ID_DEV=${erbSourceId}`);
+    console.log(`  VITE_LAN_SOURCE_ID_DEV=${lanSourceId}`);
+    console.log(`  VITE_THO_SOURCE_ID_DEV=${thoSourceId}`);
     
     return result;
 }
 
 // Start universe transaction function
-export async function startUniverse({ name, galaxies, systems, planets }) {
-    // Validate parameters
+export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1, planets = 255, open = true } = {}) {
+    // Validate parameters (with defaults applied)
     if (!name || typeof name !== 'string') {
         throw new Error('Universe name is required and must be a string');
     }
-    if (!galaxies || !Number.isInteger(galaxies) || galaxies < 1 || galaxies > 255) {
+    if (!Number.isInteger(galaxies) || galaxies < 1 || galaxies > 255) {
         throw new Error('Galaxies must be an integer between 1 and 255');
     }
-    if (!systems || !Number.isInteger(systems) || systems < 1 || systems > 255) {
+    if (!Number.isInteger(systems) || systems < 1 || systems > 255) {
         throw new Error('Systems must be an integer between 1 and 255');
     }
-    if (!planets || !Number.isInteger(planets) || planets < 1 || planets > 255) {
+    if (!Number.isInteger(planets) || planets < 1 || planets > 255) {
         throw new Error('Planets must be an integer between 1 and 255');
     }
 
@@ -248,6 +231,7 @@ export async function startUniverse({ name, galaxies, systems, planets }) {
             start_universe_tx.pure('u8', galaxies),
             start_universe_tx.pure('u8', systems),
             start_universe_tx.pure('u8', planets),
+            start_universe_tx.pure('bool', false),
             start_universe_tx.object.clock()
         ],
     });
@@ -256,7 +240,7 @@ export async function startUniverse({ name, galaxies, systems, planets }) {
     const result = await client.signAndExecuteTransaction({
         transaction: start_universe_tx,
         signer: keypair,
-        requestType: 'WaitForLocalExecution',
+        requestType: 'WaitForEffectsCert',
         options: {
             showEffects: true,
             showEvents: true,
@@ -268,38 +252,83 @@ export async function startUniverse({ name, galaxies, systems, planets }) {
     console.log('Universe started successfully!');
     console.log('Transaction digest:', result.digest);
     
-    // Extract the IDs from the Move call return values
-    // The Move function returns (universe_id, erb_universe_source_id, lan_universe_source_id, tho_universe_source_id)
-    if (result.effects?.transactionDigest && result.returnValues && result.returnValues.length >= 4) {
-        // Parse the return values - they come as BCS encoded values
-        const universeId = '0x' + Buffer.from(result.returnValues[0][0]).toString('hex');
-        const universeErbSourceId = '0x' + Buffer.from(result.returnValues[1][0]).toString('hex');
-        const universeLanSourceId = '0x' + Buffer.from(result.returnValues[2][0]).toString('hex');
-        const universeThoSourceId = '0x' + Buffer.from(result.returnValues[3][0]).toString('hex');
-        
-        // Create environment variable names with universe name prefix
-        const namePrefix = name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
-        const envVars = {
-            [`${namePrefix}_UNIVERSE_ID`]: universeId,
-            [`${namePrefix}_UNIVERSE_ERB_SOURCE_ID`]: universeErbSourceId,
-            [`${namePrefix}_UNIVERSE_LAN_SOURCE_ID`]: universeLanSourceId,
-            [`${namePrefix}_UNIVERSE_THO_SOURCE_ID`]: universeThoSourceId
-        };
-        
-        // Update .env file with the universe IDs with name prefix
-        updateEnvFile(envVars);
-        
-        console.log('Universe IDs saved to .env (from return values):');
-        Object.entries(envVars).forEach(([key, value]) => {
-            console.log(`${key}:`, value);
-        });
-    } else {
-        // Fail to get returned values
-        console.warn('Warning: Could not persist universe IDs to .env file');
+    // Extract created object IDs from the transaction result
+    const createdObjects = result.objectChanges?.filter(change => change.type === 'created') || [];
+    
+    if (createdObjects.length !== 5) {
+        throw new Error(`Expected 5 created objects (Universe, UniverseCreatorCap, 3x UniverseElementSource), but found ${createdObjects.length}`);
     }
+    
+    console.log('Created objects:', createdObjects);
+    
+    // Identify objects by their types
+    let universeId, universeCapId, erbElementSourceId, lanElementSourceId, thoElementSourceId;
+    
+    for (const obj of createdObjects) {
+        const objectType = obj.objectType;
+        
+        if (objectType.includes('::universe::Universe') && !objectType.includes('UniverseCreatorCap') && !objectType.includes('UniverseElementSource')) {
+            universeId = obj.objectId;
+        } else if (objectType.includes('UniverseCreatorCap')) {
+            universeCapId = obj.objectId;
+        } else if (objectType.includes('UniverseElementSource') && objectType.includes('::erbium::ERBIUM>')) {
+            erbElementSourceId = obj.objectId;
+        } else if (objectType.includes('UniverseElementSource') && objectType.includes('::lanthanum::LANTHANUM>')) {
+            lanElementSourceId = obj.objectId;
+        } else if (objectType.includes('UniverseElementSource') && objectType.includes('::thorium::THORIUM>')) {
+            thoElementSourceId = obj.objectId;
+        }
+    }
+    
+    // Validate all objects were found
+    if (!universeId || !universeCapId || !erbElementSourceId || !lanElementSourceId || !thoElementSourceId) {
+        throw new Error('Could not identify all required objects from transaction result');
+    }
+    
+    console.log('Universe objects extracted:');
+    console.log(`${name.toUpperCase()}_UNIVERSE_ID:`, universeId);
+    console.log(`${name.toUpperCase()}_UNIVERSE_CAP_ID:`, universeCapId);
+    console.log(`${name.toUpperCase()}_ERB_ELEMENT_SOURCE_ID:`, erbElementSourceId);
+    console.log(`${name.toUpperCase()}_LAN_ELEMENT_SOURCE_ID:`, lanElementSourceId);
+    console.log(`${name.toUpperCase()}_THO_ELEMENT_SOURCE_ID:`, thoElementSourceId);
+    
+    // Prepare variable names
+    const universeNameUpper = name.toUpperCase();
+    
+    // Update CLI .env file (includes all objects including UniverseCreatorCap)
+    console.log('\nUpdating CLI .env file...');
+    updateEnvFile({
+        [`${universeNameUpper}_UNIVERSE_ID`]: universeId,
+        [`${universeNameUpper}_UNIVERSE_CAP_ID`]: universeCapId,
+        [`${universeNameUpper}_ERB_ELEMENT_SOURCE_ID`]: erbElementSourceId,
+        [`${universeNameUpper}_LAN_ELEMENT_SOURCE_ID`]: lanElementSourceId,
+        [`${universeNameUpper}_THO_ELEMENT_SOURCE_ID`]: thoElementSourceId
+    });
+    
+    // Update web .env file (excludes UniverseCreatorCap)
+    console.log('Updating web .env file...');
+    updateWebEnvFile({
+        [`VITE_${universeNameUpper}_UNIVERSE_ID_DEV`]: universeId,
+        [`VITE_${universeNameUpper}_ERB_ELEMENT_SOURCE_ID_DEV`]: erbElementSourceId,
+        [`VITE_${universeNameUpper}_LAN_ELEMENT_SOURCE_ID_DEV`]: lanElementSourceId,
+        [`VITE_${universeNameUpper}_THO_ELEMENT_SOURCE_ID_DEV`]: thoElementSourceId
+    });
     
     // Update tx-digests.json file
     updateTxDigestsFile(`start-universe-${name.toLowerCase()}`, result.digest);
+    
+    console.log(`\n✅ Universe "${name}" created and .env files updated successfully!`);
+    console.log('CLI (.env):');
+    console.log(`  ${universeNameUpper}_UNIVERSE_ID=${universeId}`);
+    console.log(`  ${universeNameUpper}_UNIVERSE_CAP_ID=${universeCapId}`);
+    console.log(`  ${universeNameUpper}_ERB_ELEMENT_SOURCE_ID=${erbElementSourceId}`);
+    console.log(`  ${universeNameUpper}_LAN_ELEMENT_SOURCE_ID=${lanElementSourceId}`);
+    console.log(`  ${universeNameUpper}_THO_ELEMENT_SOURCE_ID=${thoElementSourceId}`);
+    console.log('\nWeb (.env):');
+    console.log(`  VITE_${universeNameUpper}_UNIVERSE_ID_DEV=${universeId}`);
+    console.log(`  VITE_${universeNameUpper}_ERB_ELEMENT_SOURCE_ID_DEV=${erbElementSourceId}`);
+    console.log(`  VITE_${universeNameUpper}_LAN_ELEMENT_SOURCE_ID_DEV=${lanElementSourceId}`);
+    console.log(`  VITE_${universeNameUpper}_THO_ELEMENT_SOURCE_ID_DEV=${thoElementSourceId}`);
     
     return result;
 }
