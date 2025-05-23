@@ -1,8 +1,9 @@
 import { ConnectButton } from "@mysten/dapp-kit";
-import { Box, Container, Flex, Heading } from "@radix-ui/themes";
+import { Box, Flex, Heading } from "@radix-ui/themes";
 import { useState } from "react";
 import { WalletStatus } from "./WalletStatus";
 import { ObjectDetails } from "./ObjectDetails";
+import { Footer } from "./Footer";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<{ type: 'home' } | { type: 'object'; id: string }>({ type: 'home' });
@@ -11,43 +12,69 @@ function App() {
     switch (currentPage.type) {
       case 'home':
         return (
-          <Container>
-            <Container
-              mt="5"
-              pt="2"
-              px="4"
-              style={{ background: "var(--gray-a2)", minHeight: 500 }}
-            >
-              <WalletStatus onSelectObject={(id) => setCurrentPage({ type: 'object', id })} />
-            </Container>
-          </Container>
+          <Box
+            px="4"
+            style={{ 
+              height: "100%",
+              boxSizing: "border-box"
+            }}
+          >
+            <WalletStatus onSelectObject={(id) => setCurrentPage({ type: 'object', id })} />
+          </Box>
         );
       case 'object':
         return (
-          <Container mt="5" pt="2" px="4" style={{ background: "var(--gray-a2)", minHeight: 500 }}>
+          <Box 
+            px="4" 
+            style={{ 
+              height: "100%",
+              boxSizing: "border-box"
+            }}
+          >
             <ObjectDetails 
               objectId={currentPage.id} 
               onBack={() => setCurrentPage({ type: 'home' })} 
             />
-          </Container>
+          </Box>
         );
     }
   };
 
   return (
-    <>
+    <Flex direction="column" style={{ 
+      height: "100vh", 
+      width: "100vw",
+      maxWidth: "100%",
+      overflow: "hidden",
+      backgroundImage: "url('/background.png')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundAttachment: "fixed",
+      backgroundRepeat: "no-repeat"
+    }}>
       <Flex
         position="sticky"
         px="4"
         py="2"
         justify="between"
+        align="center"
         style={{
-          borderBottom: "1px solid var(--gray-a2)",
+          backgroundColor: "var(--color-background)",
+          opacity: 1,
+          flexShrink: 0,
+          boxSizing: "border-box"
         }}
       >
         <Box>
           <Heading 
-            style={{ cursor: 'pointer' }} 
+            style={{ 
+              cursor: 'pointer',
+              fontFamily: 'Orbitron, sans-serif',
+              fontWeight: '700',
+              fontOpticalSizing: 'auto',
+              margin: 0,
+              lineHeight: 1
+            }} 
             onClick={() => setCurrentPage({ type: 'home' })}
           >
             Trade Wars
@@ -59,8 +86,14 @@ function App() {
         </Box>
       </Flex>
       
-      {renderContent()}
-    </>
+      <Box style={{ flex: 1, overflow: "auto" }}>
+        {renderContent()}
+      </Box>
+      
+      <Box style={{ flexShrink: 0 }}>
+        <Footer />
+      </Box>
+    </Flex>
   );
 }
 
