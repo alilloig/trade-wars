@@ -24,10 +24,37 @@ program
 program
   .command('start-universe')
   .description('Start a new universe (requires sources to be created first)')
-  .action(async () => {
+  .requiredOption('--name <name>', 'Universe name')
+  .requiredOption('--galaxies <number>', 'Number of galaxies (1-255)', (val) => {
+    const num = parseInt(val, 10);
+    if (isNaN(num) || num < 1 || num > 255) {
+      throw new Error('Galaxies must be a number between 1 and 255');
+    }
+    return num;
+  })
+  .requiredOption('--systems <number>', 'Number of systems (1-255)', (val) => {
+    const num = parseInt(val, 10);
+    if (isNaN(num) || num < 1 || num > 255) {
+      throw new Error('Systems must be a number between 1 and 255');
+    }
+    return num;
+  })
+  .requiredOption('--planets <number>', 'Number of planets (1-255)', (val) => {
+    const num = parseInt(val, 10);
+    if (isNaN(num) || num < 1 || num > 255) {
+      throw new Error('Planets must be a number between 1 and 255');
+    }
+    return num;
+  })
+  .action(async (options) => {
     try {
       console.log('Starting universe...');
-      const result = await startUniverse();
+      const result = await startUniverse({
+        name: options.name,
+        galaxies: options.galaxies,
+        systems: options.systems,
+        planets: options.planets
+      });
       console.log('Universe started with digest:', result.digest);
     } catch (error) {
       console.error('Error starting universe:', error.message);

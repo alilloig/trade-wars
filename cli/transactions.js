@@ -8,7 +8,6 @@ import path from 'path';
 dotenv.config();
 
 const GAME_ADMIN_SECRET_KEY = process.env.GAME_ADMIN_SECRET_KEY;
-const GAME_ADMIN_ADDRESS = process.env.GAME_ADMIN_ADDRESS;
 const TRADE_WARS_PKG = process.env.TRADE_WARS_PKG;
 const TRADE_WARS_ID = process.env.TRADE_WARS_ID;
 const ADM_CAP_ID = process.env.ADM_CAP_ID;
@@ -16,11 +15,20 @@ const ERB_CAP_ID = process.env.ERB_CAP_ID;
 const LAN_CAP_ID = process.env.LAN_CAP_ID;
 const THO_CAP_ID = process.env.THO_CAP_ID;
 
-// Keypair from an existing secret key (Uint8Array)
-const keypair = Ed25519Keypair.fromSecretKey(GAME_ADMIN_SECRET_KEY);
+// Helper function to get keypair and client
+function getClientAndKeypair() {
+    if (!GAME_ADMIN_SECRET_KEY) {
+        throw new Error('GAME_ADMIN_SECRET_KEY environment variable is required');
+    }
+    
+    // Keypair from an existing secret key (Uint8Array)
+    const keypair = Ed25519Keypair.fromSecretKey(GAME_ADMIN_SECRET_KEY);
 
-// create a new SuiClient object pointing to the network you want to use
-const client = new SuiClient({ url: getFullnodeUrl('devnet') });
+    // create a new SuiClient object pointing to the network you want to use
+    const client = new SuiClient({ url: getFullnodeUrl('devnet') });
+    
+    return { client, keypair };
+}
 
 // Function to update .env file with new values
 function updateEnvFile(newValues) {
@@ -59,6 +67,29 @@ function updateEnvFile(newValues) {
     console.log('Updated .env file with new source IDs');
 }
 
+// Function to update tx-digests.json file
+function updateTxDigestsFile(transactionName, digest) {
+    const txDigestsPath = path.resolve('tx-digests.json');
+    let txDigests = {};
+    
+    try {
+        const content = fs.readFileSync(txDigestsPath, 'utf8');
+        txDigests = JSON.parse(content);
+    } catch (error) {
+        console.log('Creating new tx-digests.json file...');
+    }
+    
+    // Add new transaction with current timestamp
+    txDigests[transactionName] = {
+        digest: digest,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Write back to file with proper formatting
+    fs.writeFileSync(txDigestsPath, JSON.stringify(txDigests, null, 4));
+    console.log(`Transaction digest saved to tx-digests.json: ${transactionName}`);
+}
+
 // Create element sources transaction function
 export async function createElementSources() {
     // Validate that all required environment variables are set
@@ -83,6 +114,8 @@ export async function createElementSources() {
     console.log('ERB_CAP_ID:', ERB_CAP_ID);
     console.log('LAN_CAP_ID:', LAN_CAP_ID);
     console.log('THO_CAP_ID:', THO_CAP_ID);
+    
+    const { client, keypair } = getClientAndKeypair();
     
     const sources_tx = new Transaction();
     
@@ -139,37 +172,32 @@ export async function createElementSources() {
         console.log('LAN_SOURCE_ID:', lanSourceId);
         console.log('THO_SOURCE_ID:', thoSourceId);
     } else {
-        // Fallback to objectChanges method but with a warning
-        console.warn('Warning: Could not get return values, falling back to objectChanges method');
-        console.warn('This method does not guarantee correct order!');
-        
-        const createdObjects = result.objectChanges?.filter(change => change.type === 'created') || [];
-        
-        if (createdObjects.length >= 3) {
-            const sourceIds = createdObjects.slice(0, 3).map(obj => obj.objectId);
-            
-            // Update .env file with the source IDs
-            updateEnvFile({
-                ERB_SOURCE_ID: sourceIds[0],
-                LAN_SOURCE_ID: sourceIds[1],
-                THO_SOURCE_ID: sourceIds[2]
-            });
-            
-            console.log('Source IDs saved to .env (from objectChanges - order not guaranteed):');
-            console.log('ERB_SOURCE_ID:', sourceIds[0]);
-            console.log('LAN_SOURCE_ID:', sourceIds[1]);
-            console.log('THO_SOURCE_ID:', sourceIds[2]);
-        } else {
-            console.warn('Warning: Expected 3 created objects, but got', createdObjects.length);
-            console.log('Created objects:', createdObjects);
-        }
+        // Fail to get return values
+        console.warn('Warning: Could not persist source IDs to .env file');
     }
+    
+    // Update tx-digests.json file
+    updateTxDigestsFile('create-sources', result.digest);
     
     return result;
 }
 
 // Start universe transaction function
-export async function startUniverse() {
+export async function startUniverse({ name, galaxies, systems, planets }) {
+    // Validate parameters
+    if (!name || typeof name !== 'string') {
+        throw new Error('Universe name is required and must be a string');
+    }
+    if (!galaxies || !Number.isInteger(galaxies) || galaxies < 1 || galaxies > 255) {
+        throw new Error('Galaxies must be an integer between 1 and 255');
+    }
+    if (!systems || !Number.isInteger(systems) || systems < 1 || systems > 255) {
+        throw new Error('Systems must be an integer between 1 and 255');
+    }
+    if (!planets || !Number.isInteger(planets) || planets < 1 || planets > 255) {
+        throw new Error('Planets must be an integer between 1 and 255');
+    }
+
     // Reload environment variables to get the latest source IDs
     dotenv.config({ override: true });
     
@@ -194,6 +222,10 @@ export async function startUniverse() {
     console.log('LAN_SOURCE_ID:', LAN_SOURCE_ID);
     console.log('THO_SOURCE_ID:', THO_SOURCE_ID);
 
+    console.log(`Creating universe "${name}" with ${galaxies} galaxies, ${systems} systems, and ${planets} planets...`);
+
+    const { client, keypair } = getClientAndKeypair();
+    
     const start_universe_tx = new Transaction();
     
     // Set explicit gas budget (100 million MIST = 0.1 SUI)
@@ -211,10 +243,10 @@ export async function startUniverse() {
             start_universe_tx.object(ERB_SOURCE_ID),
             start_universe_tx.object(LAN_SOURCE_ID),
             start_universe_tx.object(THO_SOURCE_ID),
-            start_universe_tx.pure('string', 'Alpha'),
-            start_universe_tx.pure('u8', 8),
-            start_universe_tx.pure('u8', 128),
-            start_universe_tx.pure('u8', 16),
+            start_universe_tx.pure('string', name),
+            start_universe_tx.pure('u8', galaxies),
+            start_universe_tx.pure('u8', systems),
+            start_universe_tx.pure('u8', planets),
             start_universe_tx.object.clock()
         ],
     });
@@ -244,23 +276,29 @@ export async function startUniverse() {
         const universeLanSourceId = '0x' + Buffer.from(result.returnValues[2][0]).toString('hex');
         const universeThoSourceId = '0x' + Buffer.from(result.returnValues[3][0]).toString('hex');
         
-        // Update .env file with the universe IDs in correct order
-        updateEnvFile({
-            UNIVERSE_ID: universeId,
-            UNIVERSE_ERB_SOURCE_ID: universeErbSourceId,
-            UNIVERSE_LAN_SOURCE_ID: universeLanSourceId,
-            UNIVERSE_THO_SOURCE_ID: universeThoSourceId
-        });
+        // Create environment variable names with universe name prefix
+        const namePrefix = name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+        const envVars = {
+            [`${namePrefix}_UNIVERSE_ID`]: universeId,
+            [`${namePrefix}_UNIVERSE_ERB_SOURCE_ID`]: universeErbSourceId,
+            [`${namePrefix}_UNIVERSE_LAN_SOURCE_ID`]: universeLanSourceId,
+            [`${namePrefix}_UNIVERSE_THO_SOURCE_ID`]: universeThoSourceId
+        };
+        
+        // Update .env file with the universe IDs with name prefix
+        updateEnvFile(envVars);
         
         console.log('Universe IDs saved to .env (from return values):');
-        console.log('UNIVERSE_ID:', universeId);
-        console.log('UNIVERSE_ERB_SOURCE_ID:', universeErbSourceId);
-        console.log('UNIVERSE_LAN_SOURCE_ID:', universeLanSourceId);
-        console.log('UNIVERSE_THO_SOURCE_ID:', universeThoSourceId);
+        Object.entries(envVars).forEach(([key, value]) => {
+            console.log(`${key}:`, value);
+        });
     } else {
-        // Warn that we could not get returned values
-        console.warn('Warning: Could not get returned values');
+        // Fail to get returned values
+        console.warn('Warning: Could not persist universe IDs to .env file');
     }
+    
+    // Update tx-digests.json file
+    updateTxDigestsFile(`start-universe-${name.toLowerCase()}`, result.digest);
     
     return result;
 }
