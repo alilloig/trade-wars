@@ -9,8 +9,9 @@ interface OverseerObjectsProps {
 export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   const account = useCurrentAccount();
   
-  // Get the package ID from environment variables
-  const packageId = import.meta.env.VITE_TRADE_WARS_ID_DEV;
+  // Get the package ID and object ID from environment variables
+  const packageId = import.meta.env.VITE_TRADE_WARS_PKG_DEV;
+  const objectId = import.meta.env.VITE_TRADE_WARS_ID_DEV;
   
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   
@@ -69,7 +70,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
       <Box my="3">
         <Heading size="4" mb="2">Your Overseers</Heading>
         <Text style={{ color: "#ff6b6b" }}>
-          Package ID not configured. Please set VITE_TRADE_WARS_ID_DEV in your environment variables.
+          Package ID not configured. Please set VITE_TRADE_WARS_PACKAGE_ID in your environment variables.
         </Text>
       </Box>
     );

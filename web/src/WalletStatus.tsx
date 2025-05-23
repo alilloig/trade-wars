@@ -1,6 +1,5 @@
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { Container, Flex, Heading, Text, Box } from "@radix-ui/themes";
-import { OwnedObjects } from "./OwnedObjects";
 import { OverseerObjects } from "./OverseerObjects";
 
 interface WalletStatusProps {
