@@ -90,15 +90,15 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
     // Reserves (need timestamp)
     tx.moveCall({
       target: `${packageId}::planet::get_erbium_reserves`,
-      arguments: [tx.object(planetId), tx.pure.u64(now)]
+      arguments: [tx.object(planetId), tx.object.clock()]
     });
     tx.moveCall({
       target: `${packageId}::planet::get_lanthanum_reserves`,
-      arguments: [tx.object(planetId), tx.pure.u64(now)]
+      arguments: [tx.object(planetId), tx.object.clock()]
     });
     tx.moveCall({
       target: `${packageId}::planet::get_thorium_reserves`,
-      arguments: [tx.object(planetId), tx.pure.u64(now)]
+      arguments: [tx.object(planetId), tx.object.clock()]
     });
 
     // Mine levels (no timestamp needed)

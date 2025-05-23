@@ -13,7 +13,7 @@ use trade_wars::universe_element_source::UniverseElementSource;
 // === Errors ===
 
 // === Constants ===
-const MillisecondsPerMinute: u64 = 60000;
+const MillisecondsPerSecond: u64 = 1000;
 
 // === Structs ===
 // === ::ElementMine ===
@@ -37,11 +37,11 @@ public struct ElementMine<phantom T> has store {
 
 // === ::ElementMine Package Functions ===
 /// Creates a new ElementMine connected to the provided element source
-public(package) fun create_mine<T>(source: &UniverseElementSource<T>): ElementMine<T> {
+public(package) fun create_mine<T>(source: &UniverseElementSource<T>, now: u64): ElementMine<T> {
     ElementMine {
         source: object::id(source),
         level: 1,
-        last_extraction_time: 0,
+        last_extraction_time: now,
         production_factor: source.mines_parameters<T>().get_production_factor(),
         erbium_upgrade_cost: source.mines_parameters<T>().get_erbium_upgrade_cost(),
         lanthanum_upgrade_cost: source.mines_parameters<T>().get_lanthanum_upgrade_cost(),
@@ -81,8 +81,8 @@ public(package) fun last_extraction_time<T>(self: &ElementMine<T>): u64 {
 
 /// Returns the amount of element produced since the last extraction
 public(package) fun amount_produced<T>(self: &ElementMine<T>, now: u64): u64 {
-    let seconds_since_last_extraction = (now - self.last_extraction_time) / (MillisecondsPerMinute);
-    seconds_since_last_extraction * self.production_factor
+    let seconds_since_last_extraction = (now - self.last_extraction_time) / MillisecondsPerSecond;
+    seconds_since_last_extraction * self.level / self.production_factor
 }
 
 /// Upgrades the mine level by consuming the required elements

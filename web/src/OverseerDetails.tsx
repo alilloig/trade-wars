@@ -190,6 +190,7 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
           tx.object(universe.lanthanumSource!), // lanthanum source
           tx.object(universe.thoriumSource!), // thorium source
           tx.object.random(), // random
+          tx.object.clock(), // clock
         ],
       });
 

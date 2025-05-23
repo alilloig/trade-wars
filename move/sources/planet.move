@@ -8,6 +8,7 @@ module trade_wars::planet;
 use sui::balance::{Self, Balance};
 use sui::display::{Self, Display};
 use sui::package::Publisher;
+use sui::clock::Clock;
 use trade_wars::element_mine::{Self, ElementMine};
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
@@ -103,17 +104,18 @@ public(package) fun create_and_share_planet(
     erbium_source: &UniverseElementSource<ERBIUM>,
     lanthanum_source: &UniverseElementSource<LANTHANUM>,
     thorium_source: &UniverseElementSource<THORIUM>,
+    now: u64,
     ctx: &mut TxContext,
 ): PlanetCap {
     let planet = Planet {
         id: object::new(ctx),
         info: info,
         system_size: system_size,
-        erbium_mine: element_mine::create_mine<ERBIUM>(erbium_source),
+        erbium_mine: element_mine::create_mine<ERBIUM>(erbium_source, now),
         erbium_store: balance::zero<ERBIUM>(),
-        lanthanum_mine: element_mine::create_mine<LANTHANUM>(lanthanum_source),
+        lanthanum_mine: element_mine::create_mine<LANTHANUM>(lanthanum_source, now),
         lanthanum_store: balance::zero<LANTHANUM>(),
-        thorium_mine: element_mine::create_mine<THORIUM>(thorium_source),
+        thorium_mine: element_mine::create_mine<THORIUM>(thorium_source, now),
         thorium_store: balance::zero<THORIUM>(),
     };
     let cap = create_planet_capability(object::id(&planet));
@@ -122,17 +124,20 @@ public(package) fun create_and_share_planet(
 }
 
 /// Returns the amount of erbium that the planet has in its stores and mines
-public fun get_erbium_reserves(self: &Planet, now: u64): u64 {
+entry fun get_erbium_reserves(self: &Planet, c: &Clock): u64 {
+    let now = c.timestamp_ms();
     self.erbium_store.value<ERBIUM>() + self.erbium_mine.amount_produced(now)
 }
 
 /// Returns the amount of lanthanum that the planet has in its stores and mines
-public fun get_lanthanum_reserves(self: &Planet, now: u64): u64 {
+entry fun get_lanthanum_reserves(self: &Planet, c: &Clock): u64 {
+    let now = c.timestamp_ms();
     self.lanthanum_store.value<LANTHANUM>() + self.lanthanum_mine.amount_produced(now)
 }
 
 /// Returns the amount of thorium that the planet has in its stores and mines
-public fun get_thorium_reserves(self: &Planet, now: u64): u64 {
+entry fun get_thorium_reserves(self: &Planet, c: &Clock): u64 {
+    let now = c.timestamp_ms();
     self.thorium_store.value<THORIUM>() + self.thorium_mine.amount_produced(now)
 }
 
