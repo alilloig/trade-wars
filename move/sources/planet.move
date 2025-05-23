@@ -28,7 +28,6 @@ const ENotEnoughResources: u64 = 3;
 
 // === Constants ===
 
-
 // === Structs ===
 // === ::PlanetCap ===
 /// Cap that grants ownership and control over a planet
@@ -123,18 +122,66 @@ public(package) fun create_and_share_planet(
 }
 
 /// Returns the amount of erbium that the planet has in its stores and mines
-public(package) fun get_erbium_reserves(self: &Planet, now: u64): u64 {
+public fun get_erbium_reserves(self: &Planet, now: u64): u64 {
     self.erbium_store.value<ERBIUM>() + self.erbium_mine.amount_produced(now)
 }
 
 /// Returns the amount of lanthanum that the planet has in its stores and mines
-public(package) fun get_lanthanum_reserves(self: &Planet, now: u64): u64 {
+public fun get_lanthanum_reserves(self: &Planet, now: u64): u64 {
     self.lanthanum_store.value<LANTHANUM>() + self.lanthanum_mine.amount_produced(now)
 }
 
 /// Returns the amount of thorium that the planet has in its stores and mines
-public(package) fun get_thorium_reserves(self: &Planet, now: u64): u64 {
+public fun get_thorium_reserves(self: &Planet, now: u64): u64 {
     self.thorium_store.value<THORIUM>() + self.thorium_mine.amount_produced(now)
+}
+
+public fun get_erbium_mine_level(self: &Planet): u64 {
+    self.erbium_mine.level()
+}
+
+public fun get_lanthanum_mine_level(self: &Planet): u64 {
+    self.lanthanum_mine.level()
+}
+
+public fun get_thorium_mine_level(self: &Planet): u64 {
+    self.thorium_mine.level()
+}
+
+public fun get_erbium_mine_erbium_upgrade_cost(self: &Planet): u64 {
+    self.erbium_mine.erbium_upgrade_cost()
+}
+
+public fun get_erbium_mine_lanthanum_upgrade_cost(self: &Planet): u64 {
+    self.erbium_mine.lanthanum_upgrade_cost()
+}
+
+public fun get_erbium_mine_thorium_upgrade_cost(self: &Planet): u64 {
+    self.erbium_mine.thorium_upgrade_cost()
+}
+
+public fun get_lanthanum_mine_erbium_upgrade_cost(self: &Planet): u64 {
+    self.lanthanum_mine.erbium_upgrade_cost()
+}
+
+public fun get_lanthanum_mine_lanthanum_upgrade_cost(self: &Planet): u64 {
+    self.lanthanum_mine.lanthanum_upgrade_cost()
+}
+
+public fun get_lanthanum_mine_thorium_upgrade_cost(self: &Planet): u64 {
+    self.lanthanum_mine.thorium_upgrade_cost()
+}
+
+public fun get_thorium_mine_erbium_upgrade_cost(self: &Planet): u64 {
+    self.thorium_mine.erbium_upgrade_cost()
+}
+
+public fun get_thorium_mine_lanthanum_upgrade_cost(self: &Planet): u64 {
+    self.thorium_mine.lanthanum_upgrade_cost()
+}
+
+public fun get_thorium_mine_thorium_upgrade_cost(self: &Planet): u64 {
+    self.thorium_mine.thorium_upgrade_cost()
 }
 
 /// Upgrades a planet's erbium mine to increase its production
@@ -148,8 +195,8 @@ public(package) fun upgrade_erbium_mine(
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
     let erb_cost = self.erbium_mine.erbium_upgrade_cost();
-    let lan_cost = self.lanthanum_mine.lanthanum_upgrade_cost();
-    let tho_cost = self.thorium_mine.thorium_upgrade_cost();
+    let lan_cost = self.erbium_mine.lanthanum_upgrade_cost();
+    let tho_cost = self.erbium_mine.thorium_upgrade_cost();
     assert!(self.has_enough_resources(erb_cost, lan_cost, tho_cost, now), ENotEnoughResources);
     if (self.erbium_store.value<ERBIUM>() < erb_cost) {
         self.erbium_store.join(self.erbium_mine.extract_element<ERBIUM>(erb_source, now));
@@ -177,8 +224,8 @@ public(package) fun upgrade_lanthanum_mine(
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
     let lan_cost = self.lanthanum_mine.lanthanum_upgrade_cost();
-    let erb_cost = self.erbium_mine.erbium_upgrade_cost();
-    let tho_cost = self.thorium_mine.thorium_upgrade_cost();
+    let erb_cost = self.lanthanum_mine.erbium_upgrade_cost();
+    let tho_cost = self.lanthanum_mine.thorium_upgrade_cost();
     assert!(self.has_enough_resources(erb_cost, lan_cost, tho_cost, now), ENotEnoughResources);
     if (self.lanthanum_store.value<LANTHANUM>() < lan_cost) {
         self.lanthanum_store.join(self.lanthanum_mine.extract_element<LANTHANUM>(lan_source, now));
@@ -205,8 +252,8 @@ public(package) fun upgrade_thorium_mine(
     now: u64,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
-    let lan_cost = self.lanthanum_mine.lanthanum_upgrade_cost();
-    let erb_cost = self.erbium_mine.erbium_upgrade_cost();
+    let lan_cost = self.thorium_mine.lanthanum_upgrade_cost();
+    let erb_cost = self.thorium_mine.erbium_upgrade_cost();
     let tho_cost = self.thorium_mine.thorium_upgrade_cost();
     assert!(self.has_enough_resources(erb_cost, lan_cost, tho_cost, now), ENotEnoughResources);
     if (self.thorium_store.value<THORIUM>() < tho_cost) {
@@ -287,7 +334,13 @@ fun check_overseer_authority(self: &Planet, cap: &PlanetCap): bool {
     object::id(self) == cap.planet
 }
 
-fun has_enough_resources(self: &Planet, erb_cost: u64, lan_cost: u64, tho_cost: u64, now: u64): bool {
+fun has_enough_resources(
+    self: &Planet,
+    erb_cost: u64,
+    lan_cost: u64,
+    tho_cost: u64,
+    now: u64,
+): bool {
     self.erbium_store.value<ERBIUM>() + self.erbium_mine.amount_produced(now) >= erb_cost &&
     self.lanthanum_store.value<LANTHANUM>() + self.lanthanum_mine.amount_produced(now) >= lan_cost &&
     self.thorium_store.value<THORIUM>() + self.thorium_mine.amount_produced(now) >= tho_cost

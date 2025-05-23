@@ -3,10 +3,10 @@
 
 module trade_wars::overseer;
 
+use sui::clock::Clock;
+use sui::object_table::{Self, ObjectTable};
 use sui::random::Random;
 use sui::table::{Self, Table};
-use sui::object_table::{Self, ObjectTable};
-use sui::clock::Clock;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::planet::{Planet, PlanetCap};
@@ -24,7 +24,8 @@ const EUniverseNotOpen: u64 = 1;
 public struct Overseer has key {
     id: UID,
     universes: vector<ID>,
-    empire: ObjectTable<ID, Table<ID,PlanetCap>>,
+    planets: Table<ID, vector<ID>>,
+    empire: ObjectTable<ID, Table<ID, PlanetCap>>,
 }
 
 /// Creates a new Overseer object
@@ -32,7 +33,8 @@ fun new_overseer(ctx: &mut TxContext): Overseer {
     Overseer {
         id: object::new(ctx),
         universes: vector::empty(),
-        empire: object_table::new<ID, Table<ID,PlanetCap>>(ctx),
+        planets: table::new<ID, vector<ID>>(ctx),
+        empire: object_table::new<ID, Table<ID, PlanetCap>>(ctx),
     }
 }
 
@@ -57,22 +59,28 @@ entry fun join_universe(
     ctx: &mut TxContext,
 ) {
     assert!(!self.has_joined_universe(object::id(universe)), EOverseerAlreadyJoinedUniverse);
-    assert!(universe.get_info().open(), EUniverseNotOpen);
+    assert!(universe.open(), EUniverseNotOpen);
     // aux variable for the universe id
     let universe_id = object::id(universe);
     // Initialize a new universe table in the empire
     self.empire.add(universe_id, table::new<ID, PlanetCap>(ctx));
+    // Initialize a new planet table in the overseer
+    self.planets.add(universe_id, vector::empty<ID>());
     // occupy a planet and get a planet capability
-    let planet_cap = 
-        universe.occupy_planet(
+    let planet_cap = universe.occupy_planet(
         erb_source,
         lan_source,
         tho_source,
         &mut r.new_generator(ctx),
         ctx,
-        );
+    );
+    // Add the planet to the overseer's list of planets
+    self.planets.borrow_mut<ID, vector<ID>>(universe_id).push_back(planet_cap.planet());
     // add the planet capability to the universe table
-    self.empire.borrow_mut<ID, Table<ID,PlanetCap>>(universe_id).add<ID, PlanetCap>(universe_id, planet_cap);
+    self
+        .empire
+        .borrow_mut<ID, Table<ID, PlanetCap>>(universe_id)
+        .add<ID, PlanetCap>(planet_cap.planet(), planet_cap);
     // Add the universe to the overseer's list of joined universes
     vector::push_back(&mut self.universes, universe_id);
 }
@@ -143,6 +151,10 @@ public fun joined_universes(self: &Overseer): vector<ID> {
 }
 
 // === View Functions ===
+public fun get_universe_planets(self: &Overseer, universe: ID): vector<ID> {
+    *self.planets.borrow<ID, vector<ID>>(universe)
+}
+
 // === Admin Functions ===
 // === Package Functions ===
 // === Private Functions ===
@@ -153,7 +165,7 @@ fun has_joined_universe(self: &Overseer, universe: ID): bool {
 
 // Returns a &PlanetCap for the specified planet in the specified universe
 fun get_planet_cap_ref(self: &Overseer, universe: ID, planet: ID): &PlanetCap {
-    self.empire.borrow<ID, Table<ID,PlanetCap>>(universe).borrow(planet)
+    self.empire.borrow<ID, Table<ID, PlanetCap>>(universe).borrow(planet)
 }
 
 // === Test Functions ===

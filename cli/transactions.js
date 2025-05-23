@@ -173,13 +173,16 @@ export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1,
         throw new Error('Universe name is required and must be a string');
     }
     if (!Number.isInteger(galaxies) || galaxies < 1 || galaxies > 255) {
-        throw new Error('Galaxies must be an integer between 1 and 255');
+        throw new Error('Galaxies must be a number between 1 and 255');
     }
     if (!Number.isInteger(systems) || systems < 1 || systems > 255) {
-        throw new Error('Systems must be an integer between 1 and 255');
+        throw new Error('Systems must be a number between 1 and 255');
     }
     if (!Number.isInteger(planets) || planets < 1 || planets > 255) {
-        throw new Error('Planets must be an integer between 1 and 255');
+        throw new Error('Planets must be a number between 1 and 255');
+    }
+    if (typeof open !== 'boolean') {
+        throw new Error('Open must be a boolean value');
     }
 
     // Reload environment variables to get the latest source IDs
@@ -206,7 +209,7 @@ export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1,
     console.log('LAN_SOURCE_ID:', LAN_SOURCE_ID);
     console.log('THO_SOURCE_ID:', THO_SOURCE_ID);
 
-    console.log(`Creating universe "${name}" with ${galaxies} galaxies, ${systems} systems, and ${planets} planets...`);
+    console.log(`Creating universe "${name}" with ${galaxies} galaxies, ${systems} systems, ${planets} planets, and open=${open}...`);
 
     const { client, keypair } = getClientAndKeypair();
     
@@ -224,6 +227,7 @@ export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1,
         arguments: [
             start_universe_tx.object(TRADE_WARS_ID),
             start_universe_tx.object(ADM_CAP_ID),
+            start_universe_tx.object(TRADE_WARS_INFO),
             start_universe_tx.object(ERB_SOURCE_ID),
             start_universe_tx.object(LAN_SOURCE_ID),
             start_universe_tx.object(THO_SOURCE_ID),
@@ -231,7 +235,7 @@ export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1,
             start_universe_tx.pure('u8', galaxies),
             start_universe_tx.pure('u8', systems),
             start_universe_tx.pure('u8', planets),
-            start_universe_tx.pure('bool', false),
+            start_universe_tx.pure('bool', open),
             start_universe_tx.object.clock()
         ],
     });

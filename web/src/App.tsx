@@ -3,10 +3,17 @@ import { Box, Flex, Heading } from "@radix-ui/themes";
 import { useState } from "react";
 import { WalletStatus } from "./WalletStatus";
 import { ObjectDetails } from "./ObjectDetails";
+import { OverseerDetails } from "./OverseerDetails";
+import { PlanetView } from "./PlanetView";
 import { Footer } from "./Footer";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<{ type: 'home' } | { type: 'object'; id: string }>({ type: 'home' });
+  const [currentPage, setCurrentPage] = useState<
+    | { type: 'home' }
+    | { type: 'object'; id: string }
+    | { type: 'overseer'; id: string }
+    | { type: 'planets'; overseerId: string; universeId: string; universeName: string }
+  >({ type: 'home' });
 
   const renderContent = () => {
     switch (currentPage.type) {
@@ -19,7 +26,14 @@ function App() {
               boxSizing: "border-box"
             }}
           >
-            <WalletStatus onSelectObject={(id) => setCurrentPage({ type: 'object', id })} />
+            <WalletStatus onSelectObject={(selectedId) => {
+              if (selectedId.startsWith('overseer:')) {
+                const overseerId = selectedId.replace('overseer:', '');
+                setCurrentPage({ type: 'overseer', id: overseerId });
+              } else {
+                setCurrentPage({ type: 'object', id: selectedId });
+              }
+            }} />
           </Box>
         );
       case 'object':
@@ -31,12 +45,54 @@ function App() {
               boxSizing: "border-box"
             }}
           >
-            <ObjectDetails 
-              objectId={currentPage.id} 
-              onBack={() => setCurrentPage({ type: 'home' })} 
+            <ObjectDetails
+              objectId={currentPage.id}
+              onBack={() => setCurrentPage({ type: 'home' })}
             />
           </Box>
         );
+      case 'overseer':
+        return (
+          <Box 
+            px="4" 
+            style={{ 
+              height: "100%",
+              boxSizing: "border-box"
+            }}
+          >
+            <OverseerDetails
+              objectId={currentPage.id}
+              onBack={() => setCurrentPage({ type: 'home' })}
+              onViewPlanets={(universeId: string, universeName: string) => {
+                setCurrentPage({ 
+                  type: 'planets', 
+                  overseerId: currentPage.id, 
+                  universeId, 
+                  universeName 
+                });
+              }}
+            />
+          </Box>
+        );
+      case 'planets':
+        return (
+          <Box 
+            px="4" 
+            style={{ 
+              height: "100%",
+              boxSizing: "border-box"
+            }}
+          >
+            <PlanetView
+              overseerId={currentPage.overseerId}
+              universeId={currentPage.universeId}
+              universeName={currentPage.universeName}
+              onBack={() => setCurrentPage({ type: 'overseer', id: currentPage.overseerId })}
+            />
+          </Box>
+        );
+      default:
+        return null;
     }
   };
 

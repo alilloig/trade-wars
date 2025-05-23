@@ -154,7 +154,8 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
 
   const handleObjectClick = (objectId: string) => {
     if (onSelectObject) {
-      onSelectObject(objectId);
+      // Pass a special parameter to indicate this is an overseer
+      onSelectObject(`overseer:${objectId}`);
     }
   };
 

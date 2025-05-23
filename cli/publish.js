@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { spawn } from 'child_process';
 import { updateEnvFile, updateWebEnvFile, updateTxDigestsFile } from './update_files.js';
 
 dotenv.config();
