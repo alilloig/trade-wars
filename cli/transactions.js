@@ -227,6 +227,7 @@ export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1,
         arguments: [
             start_universe_tx.object(TRADE_WARS_ID),
             start_universe_tx.object(ADM_CAP_ID),
+            start_universe_tx.object(TRADE_WARS_INFO),
             start_universe_tx.object(ERB_SOURCE_ID),
             start_universe_tx.object(LAN_SOURCE_ID),
             start_universe_tx.object(THO_SOURCE_ID),
