@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
-import { createElementSources, startUniverse } from './transactions.js';
+import { createElementSources, startUniverse, openUniverse, closeUniverse } from './transactions.js';
 
 program
   .version("1.0.0")
@@ -58,6 +58,44 @@ program
       console.log('Universe started with digest:', result.digest);
     } catch (error) {
       console.error('Error starting universe:', error.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('open-universe')
+  .description('Open a universe for registration')
+  .requiredOption('--universe-cap <id>', 'Universe creator capability ID')
+  .requiredOption('--universe <id>', 'Universe ID')
+  .action(async (options) => {
+    try {
+      console.log('Opening universe...');
+      const result = await openUniverse({
+        universeCap: options.universeCap,
+        universe: options.universe
+      });
+      console.log('Universe opened with digest:', result.digest);
+    } catch (error) {
+      console.error('Error opening universe:', error.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('close-universe')
+  .description('Close a universe for registration')
+  .requiredOption('--universe-cap <id>', 'Universe creator capability ID')
+  .requiredOption('--universe <id>', 'Universe ID')
+  .action(async (options) => {
+    try {
+      console.log('Closing universe...');
+      const result = await closeUniverse({
+        universeCap: options.universeCap,
+        universe: options.universe
+      });
+      console.log('Universe closed with digest:', result.digest);
+    } catch (error) {
+      console.error('Error closing universe:', error.message);
       process.exit(1);
     }
   });

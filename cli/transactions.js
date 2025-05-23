@@ -10,6 +10,7 @@ dotenv.config();
 const GAME_ADMIN_SECRET_KEY = process.env.GAME_ADMIN_SECRET_KEY;
 const TRADE_WARS_PKG = process.env.TRADE_WARS_PKG;
 const TRADE_WARS_ID = process.env.TRADE_WARS_ID;
+const TRADE_WARS_INFO = process.env.TRADE_WARS_INFO;
 const ADM_CAP_ID = process.env.ADM_CAP_ID;
 const ERB_CAP_ID = process.env.ERB_CAP_ID;
 const LAN_CAP_ID = process.env.LAN_CAP_ID;
@@ -299,6 +300,144 @@ export async function startUniverse({ name, galaxies, systems, planets }) {
     
     // Update tx-digests.json file
     updateTxDigestsFile(`start-universe-${name.toLowerCase()}`, result.digest);
+    
+    return result;
+}
+
+// Open universe transaction function
+export async function openUniverse({ universeCap, universe }) {
+    // Validate parameters
+    if (!universeCap || typeof universeCap !== 'string') {
+        throw new Error('Universe capability ID is required and must be a string');
+    }
+    if (!universe || typeof universe !== 'string') {
+        throw new Error('Universe ID is required and must be a string');
+    }
+
+    // Validate that all required environment variables are set
+    const requiredEnvVars = {
+        TRADE_WARS_PKG,
+        TRADE_WARS_ID,
+        TRADE_WARS_INFO
+    };
+    
+    for (const [name, value] of Object.entries(requiredEnvVars)) {
+        if (!value) {
+            throw new Error(`Missing required environment variable: ${name}`);
+        }
+    }
+    
+    console.log('Using environment variables:');
+    console.log('TRADE_WARS_ID:', TRADE_WARS_ID);
+    console.log('TRADE_WARS_INFO:', TRADE_WARS_INFO);
+    console.log('Universe Cap:', universeCap);
+    console.log('Universe ID:', universe);
+    
+    const { client, keypair } = getClientAndKeypair();
+    
+    const open_universe_tx = new Transaction();
+    
+    // Construct the method name string
+    let openUniverseCall = TRADE_WARS_PKG+'::trade_wars::open_universe';
+
+    // Add a moveCall to the transaction
+    open_universe_tx.moveCall({
+        target: openUniverseCall,
+        arguments: [
+            open_universe_tx.object(TRADE_WARS_ID),
+            open_universe_tx.object(universeCap), 
+            open_universe_tx.object(TRADE_WARS_INFO), 
+            open_universe_tx.object(universe)
+        ],
+    });
+
+    // Sign and execute the transaction
+    const result = await client.signAndExecuteTransaction({
+        transaction: open_universe_tx,
+        signer: keypair,
+        requestType: 'WaitForLocalExecution',
+        options: {
+            showEffects: true,
+            showEvents: true,
+            showObjectChanges: true,
+            showReturnValues: true,
+        },
+    });
+
+    console.log('Universe opened successfully!');
+    console.log('Transaction digest:', result.digest);
+    
+    // Update tx-digests.json file
+    updateTxDigestsFile('open-universe', result.digest);
+    
+    return result;
+}
+
+// Close universe transaction function
+export async function closeUniverse({ universeCap, universe }) {
+    // Validate parameters
+    if (!universeCap || typeof universeCap !== 'string') {
+        throw new Error('Universe capability ID is required and must be a string');
+    }
+    if (!universe || typeof universe !== 'string') {
+        throw new Error('Universe ID is required and must be a string');
+    }
+
+    // Validate that all required environment variables are set
+    const requiredEnvVars = {
+        TRADE_WARS_PKG,
+        TRADE_WARS_ID,
+        TRADE_WARS_INFO
+    };
+    
+    for (const [name, value] of Object.entries(requiredEnvVars)) {
+        if (!value) {
+            throw new Error(`Missing required environment variable: ${name}`);
+        }
+    }
+    
+    console.log('Using environment variables:');
+    console.log('TRADE_WARS_ID:', TRADE_WARS_ID);
+    console.log('TRADE_WARS_INFO:', TRADE_WARS_INFO);
+    console.log('Universe Cap:', universeCap);
+    console.log('Universe ID:', universe);
+    
+    const { client, keypair } = getClientAndKeypair();
+    
+    const close_universe_tx = new Transaction();
+    
+    // Construct the method name string
+    let closeUniverseCall = TRADE_WARS_PKG+'::trade_wars::close_universe';
+
+    // Add a moveCall to the transaction
+    close_universe_tx.moveCall({
+        target: closeUniverseCall,
+        arguments: [
+            close_universe_tx.object(TRADE_WARS_ID),
+            close_universe_tx.object(universeCap), 
+            close_universe_tx.object(TRADE_WARS_INFO), 
+            close_universe_tx.object(universe)
+        ],
+    });
+
+    // Sign and execute the transaction
+    const result = await client.signAndExecuteTransaction({
+        transaction: close_universe_tx,
+        signer: keypair,
+        requestType: 'WaitForLocalExecution',
+        options: {
+            showEffects: true,
+            showEvents: true,
+            showObjectChanges: true,
+            showReturnValues: true,
+        },
+    });
+
+    console.log('Universe closed successfully!');
+    console.log('Transaction digest:', result.digest);
+    
+    // Update tx-digests.json file
+    updateTxDigestsFile('close-universe', result.digest);
     
     return result;
 }
