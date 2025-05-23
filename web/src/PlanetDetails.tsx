@@ -411,19 +411,19 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
         <Flex direction="row" gap="3">
           <Card style={{ backgroundColor: "rgba(255, 99, 71, 0.1)", border: "1px solid #ff6347", flex: 1 }}>
             <Flex direction="column" align="center" gap="2">
-              <Text weight="bold" style={{ color: "#ff6347" }}>🔥 Erbium</Text>
+              <Text weight="bold" style={{ color: "#ff6347" }}>Erbium</Text>
               <Text size="6" weight="bold" style={{ color: "#ff6347" }}>{planetReserves.erbium}</Text>
             </Flex>
           </Card>
           <Card style={{ backgroundColor: "rgba(0, 255, 127, 0.1)", border: "1px solid #00ff7f", flex: 1 }}>
             <Flex direction="column" align="center" gap="2">
-              <Text weight="bold" style={{ color: "#00ff7f" }}>🌱 Lanthanum</Text>
+              <Text weight="bold" style={{ color: "#00ff7f" }}>Lanthanum</Text>
               <Text size="6" weight="bold" style={{ color: "#00ff7f" }}>{planetReserves.lanthanum}</Text>
             </Flex>
           </Card>
           <Card style={{ backgroundColor: "rgba(138, 43, 226, 0.1)", border: "1px solid #8a2be2", flex: 1 }}>
             <Flex direction="column" align="center" gap="2">
-              <Text weight="bold" style={{ color: "#8a2be2" }}>💜 Thorium</Text>
+              <Text weight="bold" style={{ color: "#8a2be2" }}>Thorium</Text>
               <Text size="6" weight="bold" style={{ color: "#8a2be2" }}>{planetReserves.thorium}</Text>
             </Flex>
           </Card>
@@ -441,7 +441,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
             <Flex justify="between" align="center">
               <Flex direction="column" gap="2">
                 <Flex align="center" gap="2">
-                  <Text weight="bold" size="4" style={{ color: "#ff6347" }}>🔥 Erbium Mine</Text>
+                  <Text weight="bold" size="4" style={{ color: "#ff6347" }}>Erbium Mine</Text>
                   <Badge color="orange">Level {mineLevels.erbium}</Badge>
                 </Flex>
                 <Text size="2" style={{ color: "#a0a0a0" }}>
@@ -463,7 +463,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
             <Flex justify="between" align="center">
               <Flex direction="column" gap="2">
                 <Flex align="center" gap="2">
-                  <Text weight="bold" size="4" style={{ color: "#00ff7f" }}>🌱 Lanthanum Mine</Text>
+                  <Text weight="bold" size="4" style={{ color: "#00ff7f" }}>Lanthanum Mine</Text>
                   <Badge color="green">Level {mineLevels.lanthanum}</Badge>
                 </Flex>
                 <Text size="2" style={{ color: "#a0a0a0" }}>
@@ -485,7 +485,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
             <Flex justify="between" align="center">
               <Flex direction="column" gap="2">
                 <Flex align="center" gap="2">
-                  <Text weight="bold" size="4" style={{ color: "#8a2be2" }}>💜 Thorium Mine</Text>
+                  <Text weight="bold" size="4" style={{ color: "#8a2be2" }}>Thorium Mine</Text>
                   <Badge color="purple">Level {mineLevels.thorium}</Badge>
                 </Flex>
                 <Text size="2" style={{ color: "#a0a0a0" }}>
