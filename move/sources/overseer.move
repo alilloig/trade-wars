@@ -24,6 +24,7 @@ const EUniverseNotOpen: u64 = 1;
 public struct Overseer has key {
     id: UID,
     universes: vector<ID>,
+    planets: Table<ID, vector<ID>>,
     empire: ObjectTable<ID, Table<ID,PlanetCap>>,
 }
 
@@ -32,6 +33,7 @@ fun new_overseer(ctx: &mut TxContext): Overseer {
     Overseer {
         id: object::new(ctx),
         universes: vector::empty(),
+        planets: table::new<ID, vector<ID>>(ctx),
         empire: object_table::new<ID, Table<ID,PlanetCap>>(ctx),
     }
 }
@@ -71,6 +73,9 @@ entry fun join_universe(
         &mut r.new_generator(ctx),
         ctx,
         );
+    // Add the planet to the overseer's list of planets
+    self.planets.add(universe_id, vector::empty<ID>());
+    self.planets.borrow_mut<ID, vector<ID>>(universe_id).push_back(planet_cap.planet());
     // add the planet capability to the universe table
     self.empire.borrow_mut<ID, Table<ID,PlanetCap>>(universe_id).add<ID, PlanetCap>(universe_id, planet_cap);
     // Add the universe to the overseer's list of joined universes
@@ -143,6 +148,10 @@ public fun joined_universes(self: &Overseer): vector<ID> {
 }
 
 // === View Functions ===
+public fun get_universe_planets(self: &Overseer, universe: ID): vector<ID> {
+    *self.planets.borrow<ID, vector<ID>>(universe)
+}
+
 // === Admin Functions ===
 // === Package Functions ===
 // === Private Functions ===
