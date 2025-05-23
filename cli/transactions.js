@@ -1,16 +1,20 @@
 import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const KEY_PAIR = process.env.KEY_PAIR;
+const GAME_ADMIN_SECRET_KEY = process.env.GAME_ADMIN_SECRET_KEY;
 const GAME_ADMIN_ADDRESS = process.env.GAME_ADMIN_ADDRESS;
 const TRADE_WARS_ID = process.env.TRADE_WARS_ID;
 const GAME_ADMIN_CAPABILITY_ID = process.env.GAME_ADMIN_CAPABILITY_ID;
 const ERBIUM_TREASURY_ID = process.env.ERBIUM_TREASURY_ID;
 const LANTHANUM_TREASURY_ID = process.env.LANTHANUM_TREASURY_ID;
 const THORIUM_TREASURY_ID = process.env.THORIUM_TREASURY_ID;
+
+// Keypair from an existing secret key (Uint8Array)
+const keypair = Ed25519Keypair.fromSecretKey(GAME_ADMIN_SECRET_KEY);
 
 // Create element sources transaction
 const sources_tx = new Transaction();
@@ -30,7 +34,7 @@ sources_tx.moveCall({
 // const [erb_source_id, lan_source_id, tho_source_id]
 export const sources = await client.signAndExecuteTransactionBlock({
 	transaction: sources_tx,
-    signer: KEY_PAIR,
+    signer: keypair,
 	requestType: 'WaitForLocalExecution',
 	options: {
 		showEffects: true,
@@ -61,7 +65,7 @@ start_universe_tx.moveCall({
 // Sign and execute the transaction
 export const universe = await client.signAndExecuteTransactionBlock({
 	transaction: start_universe_tx,
-    signer: KEY_PAIR,
+    signer: keypair,
 	requestType: 'WaitForLocalExecution',
     options: {
 		showEffects: true,
