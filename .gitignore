@@ -4,5 +4,7 @@ web/node_modules/
 web/.vite
 cli/node_modules/
 cli/.env
+cli/tx_notes.js
+tx-results/
 .vscode/
 .DS_Store
