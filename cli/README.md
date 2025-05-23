@@ -37,6 +37,18 @@ $ trade-wars create-sources
 ```
 Creates the objects that mint all the resources mined by players. Needs to be run just once after the contracts have been published.
 
+**What it does:**
+- Creates three element source objects (ERBIUM, LANTHANUM, THORIUM)
+- Updates `cli/.env` with:
+  - `ERB_SOURCE_ID` (ERBIUM source object)
+  - `LAN_SOURCE_ID` (LANTHANUM source object)
+  - `THO_SOURCE_ID` (THORIUM source object)
+- Updates `web/.env` with:
+  - `VITE_ERB_SOURCE_ID_DEV` (ERBIUM source object)
+  - `VITE_LAN_SOURCE_ID_DEV` (LANTHANUM source object)
+  - `VITE_THO_SOURCE_ID_DEV` (THORIUM source object)
+- Records the transaction digest in `tx-digests.json`
+
 ### Start a new universe
 
 ```console
