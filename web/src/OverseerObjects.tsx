@@ -126,7 +126,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   if (!packageId) {
     return (
       <Box my="3">
-        <Heading size="4" mb="2">Your Overseers</Heading>
+        <Heading size="4" mb="2">Your Empires</Heading>
         <Text style={{ color: "#ff6b6b" }}>
           Package ID not configured. Please set VITE_TRADE_WARS_PACKAGE_ID in your environment variables.
         </Text>
@@ -137,7 +137,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   if (error) {
     return (
       <Box my="3">
-        <Heading size="4" mb="2">Your Overseers</Heading>
+        <Heading size="4" mb="2">Your Empires</Heading>
         <Text style={{ color: "#ff6b6b" }}>Error loading Overseers: {error.message}</Text>
       </Box>
     );
@@ -146,7 +146,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   if (isPending || !data) {
     return (
       <Box my="3">
-        <Heading size="4" mb="2">Your Overseers</Heading>
+        <Heading size="4" mb="2">Your Empires</Heading>
         <Text style={{ color: "#a0a0a0" }}>Loading Overseers...</Text>
       </Box>
     );
@@ -160,7 +160,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
 
   return (
     <Box my="3">
-      <Heading size="4" mb="2">Your Overseers</Heading>
+      <Heading size="4" mb="2">Your Empires</Heading>
       {data.data.length === 0 ? (
         <Flex direction="column" gap="3">
           <Text style={{ color: "#e0e0e0" }}>No Overseer found</Text>
