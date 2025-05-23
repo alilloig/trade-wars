@@ -118,18 +118,31 @@ export function OverseerDetails({ objectId, onBack }: OverseerDetailsProps) {
   // Helper function to extract universe display data
   const extractUniverseDisplay = (universeObject: any): UniverseDisplayData => {
     const id = universeObject?.data?.objectId || '';
-    const display = universeObject?.data?.display?.data || {};
+    const content = universeObject?.data?.content;
     
-    console.log('Universe object:', universeObject); // Debug log
-    console.log('Universe display data:', display); // Debug log
+    console.log('Universe object ID:', id); // Debug log
+    
+    // Get data from content fields (primary source)
+    let name, galaxies, systems, planets, open;
+    
+    if (content && 'fields' in content) {
+      const fields = content.fields as any;
+      name = fields.name;
+      galaxies = fields.galaxies?.toString();
+      systems = fields.systems?.toString();
+      planets = fields.planets?.toString();
+      open = fields.open ? 'Yes' : 'No';
+      
+      console.log(`Universe ${id}: ${name} - ${galaxies}g/${systems}s/${planets}p - Open: ${open}`);
+    }
     
     return {
       id,
-      name: display.name || 'Unknown Universe',
-      galaxies: display.galaxies || '?',
-      systems: display.systems || '?',
-      planets: display.planets || '?',
-      open: display.open || '?',
+      name: name || 'Unknown Universe',
+      galaxies: galaxies || '?',
+      systems: systems || '?',
+      planets: planets || '?',
+      open: open || '?',
     };
   };
 
@@ -276,6 +289,30 @@ export function OverseerDetails({ objectId, onBack }: OverseerDetailsProps) {
         <Text size="1" style={{ color: "#808080" }}>
           Check console for detailed data fetching logs
         </Text>
+        <Box mt="2">
+          <Text size="1" style={{ color: "#808080" }}>
+            Joined Universe Count: {joinedUniverseIds.length} | 
+            Open Universe Count: {openUniverseIds.length} |
+            Available Count: {availableUniverseIds.length}
+          </Text>
+        </Box>
+        <Box mt="1">
+          <Text size="1" style={{ color: "#808080" }}>
+            TradeWarsInfo ID: {tradeWarsInfoId}
+          </Text>
+        </Box>
+        <Box mt="1">
+          <Text size="1" style={{ color: "#808080" }}>
+            Package ID: {packageId}
+          </Text>
+        </Box>
+        {availableUniversesData && availableUniversesData.length > 0 && (
+          <Box mt="2">
+            <Text size="1" style={{ color: "#808080" }}>
+              First Universe Type: {availableUniversesData[0]?.data?.type}
+            </Text>
+          </Box>
+        )}
       </Card>
     </Flex>
   );
