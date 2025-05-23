@@ -13,9 +13,8 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   const [creationStatus, setCreationStatus] = useState<string>("");
   const pollingTimeoutRef = useRef<number | undefined>(undefined);
   
-  // Get the package ID and object ID from environment variables
+  // Get the package ID from environment variables
   const packageId = import.meta.env.VITE_TRADE_WARS_PKG_DEV;
-  const objectId = import.meta.env.VITE_TRADE_WARS_ID_DEV;
   
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   
