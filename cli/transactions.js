@@ -26,7 +26,7 @@ function getClientAndKeypair() {
     const keypair = Ed25519Keypair.fromSecretKey(GAME_ADMIN_SECRET_KEY);
 
     // create a new SuiClient object pointing to the network you want to use
-    const client = new SuiClient({ url: getFullnodeUrl('local') });
+    const client = new SuiClient({ url: getFullnodeUrl('localnet') });
     
     return { client, keypair };
 }
