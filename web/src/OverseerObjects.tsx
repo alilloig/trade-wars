@@ -1,6 +1,7 @@
 import { useCurrentAccount, useSuiClientQuery, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
 import { Flex, Heading, Text, Box, Button } from "@radix-ui/themes";
 import { Transaction } from "@mysten/sui/transactions";
+import { useState, useEffect, useRef } from "react";
 
 interface OverseerObjectsProps {
   onSelectObject?: (id: string) => void;
@@ -8,6 +9,9 @@ interface OverseerObjectsProps {
 
 export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   const account = useCurrentAccount();
+  const [isCreating, setIsCreating] = useState(false);
+  const [creationStatus, setCreationStatus] = useState<string>("");
+  const pollingTimeoutRef = useRef<number | undefined>(undefined);
   
   // Get the package ID and object ID from environment variables
   const packageId = import.meta.env.VITE_TRADE_WARS_PKG_DEV;
@@ -37,8 +41,56 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
     },
   );
 
+  // Clean up polling timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const startPollingForNewOverseer = (expectedCount: number) => {
+    let pollCount = 0;
+    const maxPolls = 10; // Maximum 10 polls (20 seconds)
+    
+    const poll = () => {
+      pollCount++;
+      setCreationStatus(`Waiting for blockchain confirmation... (${pollCount}/${maxPolls})`);
+      
+      refetch().then((result) => {
+        if (result.data?.data && result.data.data.length > expectedCount) {
+          // New overseer found!
+          setCreationStatus("Overseer created successfully!");
+          setIsCreating(false);
+          setTimeout(() => setCreationStatus(""), 3000); // Clear status after 3 seconds
+        } else if (pollCount < maxPolls) {
+          // Continue polling
+          pollingTimeoutRef.current = setTimeout(poll, 2000);
+        } else {
+          // Max polls reached
+          setCreationStatus("Transaction may still be processing. Please refresh manually if needed.");
+          setIsCreating(false);
+          setTimeout(() => setCreationStatus(""), 5000);
+        }
+      }).catch((error) => {
+        console.error('Error during polling:', error);
+        setCreationStatus("Error checking for new overseer. Please refresh manually.");
+        setIsCreating(false);
+        setTimeout(() => setCreationStatus(""), 5000);
+      });
+    };
+    
+    // Start polling after initial delay
+    pollingTimeoutRef.current = setTimeout(poll, 2000);
+  };
+
   const handleCreateOverseer = () => {
-    if (!packageId) return;
+    if (!packageId || isCreating) return;
+    
+    const currentCount = data?.data?.length || 0;
+    setIsCreating(true);
+    setCreationStatus("Submitting transaction...");
     
     const tx = new Transaction();
     tx.moveCall({
@@ -50,12 +102,18 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
         transaction: tx,
       },
       {
-        onSuccess: () => {
-          // Refetch the overseers after successful creation
-          refetch();
+        onSuccess: (result) => {
+          console.log('Overseer transaction submitted successfully:', result);
+          setCreationStatus("Transaction submitted! Waiting for confirmation...");
+          
+          // Start polling for the new overseer
+          startPollingForNewOverseer(currentCount);
         },
         onError: (error) => {
           console.error('Failed to create Overseer:', error);
+          setCreationStatus("Failed to create overseer. Please try again.");
+          setIsCreating(false);
+          setTimeout(() => setCreationStatus(""), 5000);
         },
       },
     );
@@ -106,16 +164,23 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
       {data.data.length === 0 ? (
         <Flex direction="column" gap="3">
           <Text style={{ color: "#e0e0e0" }}>No Overseer found</Text>
+          {creationStatus && (
+            <Text size="2" style={{ color: "#d4af37" }}>
+              {creationStatus}
+            </Text>
+          )}
           <Button 
             onClick={handleCreateOverseer}
+            disabled={isCreating}
             style={{ 
-              backgroundColor: "#d4af37",
+              backgroundColor: isCreating ? "#8a8a8a" : "#d4af37",
               color: "#000",
               border: "none",
-              cursor: "pointer"
+              cursor: isCreating ? "not-allowed" : "pointer",
+              opacity: isCreating ? 0.7 : 1
             }}
           >
-            Create New Overseer
+            {isCreating ? "Creating Overseer..." : "Create New Overseer"}
           </Button>
         </Flex>
       ) : (
