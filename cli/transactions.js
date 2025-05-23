@@ -167,18 +167,18 @@ export async function createElementSources() {
 }
 
 // Start universe transaction function
-export async function startUniverse({ name, galaxies, systems, planets }) {
-    // Validate parameters
+export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1, planets = 255 } = {}) {
+    // Validate parameters (with defaults applied)
     if (!name || typeof name !== 'string') {
         throw new Error('Universe name is required and must be a string');
     }
-    if (!galaxies || !Number.isInteger(galaxies) || galaxies < 1 || galaxies > 255) {
+    if (!Number.isInteger(galaxies) || galaxies < 1 || galaxies > 255) {
         throw new Error('Galaxies must be an integer between 1 and 255');
     }
-    if (!systems || !Number.isInteger(systems) || systems < 1 || systems > 255) {
+    if (!Number.isInteger(systems) || systems < 1 || systems > 255) {
         throw new Error('Systems must be an integer between 1 and 255');
     }
-    if (!planets || !Number.isInteger(planets) || planets < 1 || planets > 255) {
+    if (!Number.isInteger(planets) || planets < 1 || planets > 255) {
         throw new Error('Planets must be an integer between 1 and 255');
     }
 
@@ -251,8 +251,83 @@ export async function startUniverse({ name, galaxies, systems, planets }) {
     console.log('Universe started successfully!');
     console.log('Transaction digest:', result.digest);
     
+    // Extract created object IDs from the transaction result
+    const createdObjects = result.objectChanges?.filter(change => change.type === 'created') || [];
+    
+    if (createdObjects.length !== 5) {
+        throw new Error(`Expected 5 created objects (Universe, UniverseCreatorCap, 3x UniverseElementSource), but found ${createdObjects.length}`);
+    }
+    
+    console.log('Created objects:', createdObjects);
+    
+    // Identify objects by their types
+    let universeId, universeCapId, erbElementSourceId, lanElementSourceId, thoElementSourceId;
+    
+    for (const obj of createdObjects) {
+        const objectType = obj.objectType;
+        
+        if (objectType.includes('::universe::Universe') && !objectType.includes('UniverseCreatorCap') && !objectType.includes('UniverseElementSource')) {
+            universeId = obj.objectId;
+        } else if (objectType.includes('UniverseCreatorCap')) {
+            universeCapId = obj.objectId;
+        } else if (objectType.includes('UniverseElementSource') && objectType.includes('::erbium::ERBIUM>')) {
+            erbElementSourceId = obj.objectId;
+        } else if (objectType.includes('UniverseElementSource') && objectType.includes('::lanthanum::LANTHANUM>')) {
+            lanElementSourceId = obj.objectId;
+        } else if (objectType.includes('UniverseElementSource') && objectType.includes('::thorium::THORIUM>')) {
+            thoElementSourceId = obj.objectId;
+        }
+    }
+    
+    // Validate all objects were found
+    if (!universeId || !universeCapId || !erbElementSourceId || !lanElementSourceId || !thoElementSourceId) {
+        throw new Error('Could not identify all required objects from transaction result');
+    }
+    
+    console.log('Universe objects extracted:');
+    console.log(`${name.toUpperCase()}_UNIVERSE_ID:`, universeId);
+    console.log(`${name.toUpperCase()}_UNIVERSE_CAP_ID:`, universeCapId);
+    console.log(`${name.toUpperCase()}_ERB_ELEMENT_SOURCE_ID:`, erbElementSourceId);
+    console.log(`${name.toUpperCase()}_LAN_ELEMENT_SOURCE_ID:`, lanElementSourceId);
+    console.log(`${name.toUpperCase()}_THO_ELEMENT_SOURCE_ID:`, thoElementSourceId);
+    
+    // Prepare variable names
+    const universeNameUpper = name.toUpperCase();
+    
+    // Update CLI .env file (includes all objects including UniverseCreatorCap)
+    console.log('\nUpdating CLI .env file...');
+    updateEnvFile({
+        [`${universeNameUpper}_UNIVERSE_ID`]: universeId,
+        [`${universeNameUpper}_UNIVERSE_CAP_ID`]: universeCapId,
+        [`${universeNameUpper}_ERB_ELEMENT_SOURCE_ID`]: erbElementSourceId,
+        [`${universeNameUpper}_LAN_ELEMENT_SOURCE_ID`]: lanElementSourceId,
+        [`${universeNameUpper}_THO_ELEMENT_SOURCE_ID`]: thoElementSourceId
+    });
+    
+    // Update web .env file (excludes UniverseCreatorCap)
+    console.log('Updating web .env file...');
+    updateWebEnvFile({
+        [`VITE_${universeNameUpper}_UNIVERSE_ID_DEV`]: universeId,
+        [`VITE_${universeNameUpper}_ERB_ELEMENT_SOURCE_ID_DEV`]: erbElementSourceId,
+        [`VITE_${universeNameUpper}_LAN_ELEMENT_SOURCE_ID_DEV`]: lanElementSourceId,
+        [`VITE_${universeNameUpper}_THO_ELEMENT_SOURCE_ID_DEV`]: thoElementSourceId
+    });
+    
     // Update tx-digests.json file
     updateTxDigestsFile(`start-universe-${name.toLowerCase()}`, result.digest);
+    
+    console.log(`\n✅ Universe "${name}" created and .env files updated successfully!`);
+    console.log('CLI (.env):');
+    console.log(`  ${universeNameUpper}_UNIVERSE_ID=${universeId}`);
+    console.log(`  ${universeNameUpper}_UNIVERSE_CAP_ID=${universeCapId}`);
+    console.log(`  ${universeNameUpper}_ERB_ELEMENT_SOURCE_ID=${erbElementSourceId}`);
+    console.log(`  ${universeNameUpper}_LAN_ELEMENT_SOURCE_ID=${lanElementSourceId}`);
+    console.log(`  ${universeNameUpper}_THO_ELEMENT_SOURCE_ID=${thoElementSourceId}`);
+    console.log('\nWeb (.env):');
+    console.log(`  VITE_${universeNameUpper}_UNIVERSE_ID_DEV=${universeId}`);
+    console.log(`  VITE_${universeNameUpper}_ERB_ELEMENT_SOURCE_ID_DEV=${erbElementSourceId}`);
+    console.log(`  VITE_${universeNameUpper}_LAN_ELEMENT_SOURCE_ID_DEV=${lanElementSourceId}`);
+    console.log(`  VITE_${universeNameUpper}_THO_ELEMENT_SOURCE_ID_DEV=${thoElementSourceId}`);
     
     return result;
 }

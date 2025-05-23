@@ -24,23 +24,23 @@ program
 
 program
   .command('start-universe')
-  .description('Start a new universe (requires sources to be created first)')
-  .requiredOption('--name <name>', 'Universe name')
-  .requiredOption('--galaxies <number>', 'Number of galaxies (1-255)', (val) => {
+  .description('Start a new universe (requires sources to be created first). Defaults: name=alpha, galaxies=1, systems=1, planets=255')
+  .option('--name <name>', 'Universe name (default: alpha)')
+  .option('--galaxies <number>', 'Number of galaxies (1-255, default: 1)', (val) => {
     const num = parseInt(val, 10);
     if (isNaN(num) || num < 1 || num > 255) {
       throw new Error('Galaxies must be a number between 1 and 255');
     }
     return num;
   })
-  .requiredOption('--systems <number>', 'Number of systems (1-255)', (val) => {
+  .option('--systems <number>', 'Number of systems (1-255, default: 1)', (val) => {
     const num = parseInt(val, 10);
     if (isNaN(num) || num < 1 || num > 255) {
       throw new Error('Systems must be a number between 1 and 255');
     }
     return num;
   })
-  .requiredOption('--planets <number>', 'Number of planets (1-255)', (val) => {
+  .option('--planets <number>', 'Number of planets (1-255, default: 255)', (val) => {
     const num = parseInt(val, 10);
     if (isNaN(num) || num < 1 || num > 255) {
       throw new Error('Planets must be a number between 1 and 255');
