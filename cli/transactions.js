@@ -112,32 +112,57 @@ export async function createElementSources() {
             showEffects: true,
             showEvents: true,
             showObjectChanges: true,
+            showReturnValues: true,
         },
     });
 
     console.log('Element sources created successfully!');
     console.log('Transaction digest:', result.digest);
     
-    // Extract the created source IDs from the transaction result
-    const createdObjects = result.objectChanges?.filter(change => change.type === 'created') || [];
-    
-    if (createdObjects.length >= 3) {
-        const sourceIds = createdObjects.slice(0, 3).map(obj => obj.objectId);
+    // Extract the source IDs from the Move call return values
+    // The Move function returns (erb_source_id, lan_source_id, tho_source_id)
+    if (result.effects?.transactionDigest && result.returnValues && result.returnValues.length >= 3) {
+        // Parse the return values - they come as BCS encoded values
+        const erbSourceId = '0x' + Buffer.from(result.returnValues[0][0]).toString('hex');
+        const lanSourceId = '0x' + Buffer.from(result.returnValues[1][0]).toString('hex');
+        const thoSourceId = '0x' + Buffer.from(result.returnValues[2][0]).toString('hex');
         
-        // Update .env file with the source IDs
+        // Update .env file with the source IDs in correct order
         updateEnvFile({
-            ERB_SOURCE_ID: sourceIds[0],
-            LAN_SOURCE_ID: sourceIds[1],
-            THO_SOURCE_ID: sourceIds[2]
+            ERB_SOURCE_ID: erbSourceId,
+            LAN_SOURCE_ID: lanSourceId,
+            THO_SOURCE_ID: thoSourceId
         });
         
-        console.log('Source IDs saved to .env:');
-        console.log('ERB_SOURCE_ID:', sourceIds[0]);
-        console.log('LAN_SOURCE_ID:', sourceIds[1]);
-        console.log('THO_SOURCE_ID:', sourceIds[2]);
+        console.log('Source IDs saved to .env (from return values):');
+        console.log('ERB_SOURCE_ID:', erbSourceId);
+        console.log('LAN_SOURCE_ID:', lanSourceId);
+        console.log('THO_SOURCE_ID:', thoSourceId);
     } else {
-        console.warn('Warning: Expected 3 created objects, but got', createdObjects.length);
-        console.log('Created objects:', createdObjects);
+        // Fallback to objectChanges method but with a warning
+        console.warn('Warning: Could not get return values, falling back to objectChanges method');
+        console.warn('This method does not guarantee correct order!');
+        
+        const createdObjects = result.objectChanges?.filter(change => change.type === 'created') || [];
+        
+        if (createdObjects.length >= 3) {
+            const sourceIds = createdObjects.slice(0, 3).map(obj => obj.objectId);
+            
+            // Update .env file with the source IDs
+            updateEnvFile({
+                ERB_SOURCE_ID: sourceIds[0],
+                LAN_SOURCE_ID: sourceIds[1],
+                THO_SOURCE_ID: sourceIds[2]
+            });
+            
+            console.log('Source IDs saved to .env (from objectChanges - order not guaranteed):');
+            console.log('ERB_SOURCE_ID:', sourceIds[0]);
+            console.log('LAN_SOURCE_ID:', sourceIds[1]);
+            console.log('THO_SOURCE_ID:', sourceIds[2]);
+        } else {
+            console.warn('Warning: Expected 3 created objects, but got', createdObjects.length);
+            console.log('Created objects:', createdObjects);
+        }
     }
     
     return result;
@@ -202,10 +227,40 @@ export async function startUniverse() {
         options: {
             showEffects: true,
             showEvents: true,
+            showObjectChanges: true,
+            showReturnValues: true,
         },
     });
 
     console.log('Universe started successfully!');
     console.log('Transaction digest:', result.digest);
+    
+    // Extract the IDs from the Move call return values
+    // The Move function returns (universe_id, erb_universe_source_id, lan_universe_source_id, tho_universe_source_id)
+    if (result.effects?.transactionDigest && result.returnValues && result.returnValues.length >= 4) {
+        // Parse the return values - they come as BCS encoded values
+        const universeId = '0x' + Buffer.from(result.returnValues[0][0]).toString('hex');
+        const universeErbSourceId = '0x' + Buffer.from(result.returnValues[1][0]).toString('hex');
+        const universeLanSourceId = '0x' + Buffer.from(result.returnValues[2][0]).toString('hex');
+        const universeThoSourceId = '0x' + Buffer.from(result.returnValues[3][0]).toString('hex');
+        
+        // Update .env file with the universe IDs in correct order
+        updateEnvFile({
+            UNIVERSE_ID: universeId,
+            UNIVERSE_ERB_SOURCE_ID: universeErbSourceId,
+            UNIVERSE_LAN_SOURCE_ID: universeLanSourceId,
+            UNIVERSE_THO_SOURCE_ID: universeThoSourceId
+        });
+        
+        console.log('Universe IDs saved to .env (from return values):');
+        console.log('UNIVERSE_ID:', universeId);
+        console.log('UNIVERSE_ERB_SOURCE_ID:', universeErbSourceId);
+        console.log('UNIVERSE_LAN_SOURCE_ID:', universeLanSourceId);
+        console.log('UNIVERSE_THO_SOURCE_ID:', universeThoSourceId);
+    } else {
+        // Warn that we could not get returned values
+        console.warn('Warning: Could not get returned values');
+    }
+    
     return result;
 }
