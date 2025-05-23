@@ -23,6 +23,7 @@ const EUniverseNotOpen: u64 = 1;
 /// Represents a player in the game who can control planets and build their empire
 public struct Overseer has key {
     id: UID,
+    universes: vector<ID>,
     empire: ObjectTable<ID, Table<ID,PlanetCap>>,
 }
 
@@ -30,6 +31,7 @@ public struct Overseer has key {
 fun new_overseer(ctx: &mut TxContext): Overseer {
     Overseer {
         id: object::new(ctx),
+        universes: vector::empty(),
         empire: object_table::new<ID, Table<ID,PlanetCap>>(ctx),
     }
 }
@@ -71,6 +73,8 @@ entry fun join_universe(
         );
     // add the planet capability to the universe table
     self.empire.borrow_mut<ID, Table<ID,PlanetCap>>(universe_id).add<ID, PlanetCap>(universe_id, planet_cap);
+    // Add the universe to the overseer's list of joined universes
+    vector::push_back(&mut self.universes, universe_id);
 }
 
 // Called by the player whenever they want to upgrade a planet's mine
@@ -131,17 +135,20 @@ entry fun upgrade_thorium_planet_mine(
     );
 }
 
-
 // === Events ===
 // === Method Aliases ===
 // === Public Functions ===
+public fun joined_universes(self: &Overseer): vector<ID> {
+    self.universes
+}
+
 // === View Functions ===
 // === Admin Functions ===
 // === Package Functions ===
 // === Private Functions ===
 /// Checks if the overseer has already joined a specific universe
 fun has_joined_universe(self: &Overseer, universe: ID): bool {
-    return self.empire.contains(universe)
+    return vector::contains(&self.universes, &universe)
 }
 
 // Returns a &PlanetCap for the specified planet in the specified universe
