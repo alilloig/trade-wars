@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
-import { createElementSources, startUniverse, openUniverse, closeUniverse, publishPackage } from './transactions.js';
+import { createElementSources, startUniverse, openUniverse, closeUniverse } from './transactions.js';
+import { publishPackage } from "./publish.js";
 
 program
   .version("1.0.0")
