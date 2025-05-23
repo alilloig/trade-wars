@@ -3,6 +3,7 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 import dotenv from 'dotenv';
 import { updateTxDigestsFile } from './update_files.js';
+import { execSync } from 'child_process';
 
 dotenv.config();
 
@@ -24,8 +25,29 @@ function getClientAndKeypair() {
     // Keypair from an existing secret key (Uint8Array)
     const keypair = Ed25519Keypair.fromSecretKey(GAME_ADMIN_SECRET_KEY);
 
+    // Get the active environment from sui client
+    let activeEnv;
+    try {
+        const output = execSync('sui client active-env', { encoding: 'utf8' });
+        // Extract the environment name from the output (remove warnings and whitespace)
+        activeEnv = output.split('\n').find(line => 
+            line.trim() && 
+            !line.includes('warning') && 
+            !line.includes('Client/Server')
+        )?.trim();
+        
+        if (!activeEnv) {
+            throw new Error('Could not determine active environment');
+        }
+    } catch (error) {
+        console.warn('Failed to get active environment, falling back to devnet:', error.message);
+        activeEnv = 'devnet';
+    }
+
+    console.log(`Using Sui environment: ${activeEnv}`);
+
     // create a new SuiClient object pointing to the network you want to use
-    const client = new SuiClient({ url: getFullnodeUrl('localnet') });
+    const client = new SuiClient({ url: getFullnodeUrl(activeEnv) });
     
     return { client, keypair };
 }
@@ -41,7 +63,7 @@ export async function createElementSources() {
         LAN_CAP_ID,
         THO_CAP_ID
     };
-    
+
     for (const [name, value] of Object.entries(requiredEnvVars)) {
         if (!value) {
             throw new Error(`Missing required environment variable: ${name}`);
