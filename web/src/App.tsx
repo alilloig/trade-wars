@@ -3,10 +3,11 @@ import { Box, Flex, Heading } from "@radix-ui/themes";
 import { useState } from "react";
 import { WalletStatus } from "./WalletStatus";
 import { ObjectDetails } from "./ObjectDetails";
+import { OverseerDetails } from "./OverseerDetails";
 import { Footer } from "./Footer";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<{ type: 'home' } | { type: 'object'; id: string }>({ type: 'home' });
+  const [currentPage, setCurrentPage] = useState<{ type: 'home' } | { type: 'object'; id: string } | { type: 'overseer'; id: string }>({ type: 'home' });
 
   const renderContent = () => {
     switch (currentPage.type) {
@@ -19,7 +20,15 @@ function App() {
               boxSizing: "border-box"
             }}
           >
-            <WalletStatus onSelectObject={(id) => setCurrentPage({ type: 'object', id })} />
+            <WalletStatus onSelectObject={(id) => {
+              if (id.startsWith('overseer:')) {
+                // Extract the actual overseer ID and navigate to overseer details
+                const overseerId = id.replace('overseer:', '');
+                setCurrentPage({ type: 'overseer', id: overseerId });
+              } else {
+                setCurrentPage({ type: 'object', id });
+              }
+            }} />
           </Box>
         );
       case 'object':
@@ -32,6 +41,21 @@ function App() {
             }}
           >
             <ObjectDetails 
+              objectId={currentPage.id} 
+              onBack={() => setCurrentPage({ type: 'home' })} 
+            />
+          </Box>
+        );
+      case 'overseer':
+        return (
+          <Box 
+            px="4" 
+            style={{ 
+              height: "100%",
+              boxSizing: "border-box"
+            }}
+          >
+            <OverseerDetails 
               objectId={currentPage.id} 
               onBack={() => setCurrentPage({ type: 'home' })} 
             />

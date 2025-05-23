@@ -24,7 +24,7 @@ program
 
 program
   .command('start-universe')
-  .description('Start a new universe (requires sources to be created first). Defaults: name=alpha, galaxies=1, systems=1, planets=255')
+  .description('Start a new universe (requires sources to be created first). Defaults: name=alpha, galaxies=1, systems=1, planets=255, open=true')
   .option('--name <name>', 'Universe name (default: alpha)')
   .option('--galaxies <number>', 'Number of galaxies (1-255, default: 1)', (val) => {
     const num = parseInt(val, 10);
@@ -47,8 +47,10 @@ program
     }
     return num;
   })
-  .option('--open <boolean>', 'Open universe (default: true)', (val) => {
-    return val === 'true';
+  .option('--open [boolean]', 'Whether the universe should be open for registration (default: true)', (val) => {
+    if (val === undefined || val === '' || val === 'true') return true;
+    if (val === 'false') return false;
+    throw new Error('Open must be true or false');
   })
   .action(async (options) => {
     try {
