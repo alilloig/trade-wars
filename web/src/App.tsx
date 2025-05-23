@@ -4,10 +4,16 @@ import { useState } from "react";
 import { WalletStatus } from "./WalletStatus";
 import { ObjectDetails } from "./ObjectDetails";
 import { OverseerDetails } from "./OverseerDetails";
+import { PlanetView } from "./PlanetView";
 import { Footer } from "./Footer";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<{ type: 'home' } | { type: 'object'; id: string } | { type: 'overseer'; id: string }>({ type: 'home' });
+  const [currentPage, setCurrentPage] = useState<
+    | { type: 'home' }
+    | { type: 'object'; id: string }
+    | { type: 'overseer'; id: string }
+    | { type: 'planets'; overseerId: string; universeId: string; universeName: string }
+  >({ type: 'home' });
 
   const renderContent = () => {
     switch (currentPage.type) {
@@ -20,13 +26,12 @@ function App() {
               boxSizing: "border-box"
             }}
           >
-            <WalletStatus onSelectObject={(id) => {
-              if (id.startsWith('overseer:')) {
-                // Extract the actual overseer ID and navigate to overseer details
-                const overseerId = id.replace('overseer:', '');
+            <WalletStatus onSelectObject={(selectedId) => {
+              if (selectedId.startsWith('overseer:')) {
+                const overseerId = selectedId.replace('overseer:', '');
                 setCurrentPage({ type: 'overseer', id: overseerId });
               } else {
-                setCurrentPage({ type: 'object', id });
+                setCurrentPage({ type: 'object', id: selectedId });
               }
             }} />
           </Box>
@@ -40,9 +45,9 @@ function App() {
               boxSizing: "border-box"
             }}
           >
-            <ObjectDetails 
-              objectId={currentPage.id} 
-              onBack={() => setCurrentPage({ type: 'home' })} 
+            <ObjectDetails
+              objectId={currentPage.id}
+              onBack={() => setCurrentPage({ type: 'home' })}
             />
           </Box>
         );
@@ -55,12 +60,39 @@ function App() {
               boxSizing: "border-box"
             }}
           >
-            <OverseerDetails 
-              objectId={currentPage.id} 
-              onBack={() => setCurrentPage({ type: 'home' })} 
+            <OverseerDetails
+              objectId={currentPage.id}
+              onBack={() => setCurrentPage({ type: 'home' })}
+              onViewPlanets={(universeId: string, universeName: string) => {
+                setCurrentPage({ 
+                  type: 'planets', 
+                  overseerId: currentPage.id, 
+                  universeId, 
+                  universeName 
+                });
+              }}
             />
           </Box>
         );
+      case 'planets':
+        return (
+          <Box 
+            px="4" 
+            style={{ 
+              height: "100%",
+              boxSizing: "border-box"
+            }}
+          >
+            <PlanetView
+              overseerId={currentPage.overseerId}
+              universeId={currentPage.universeId}
+              universeName={currentPage.universeName}
+              onBack={() => setCurrentPage({ type: 'overseer', id: currentPage.overseerId })}
+            />
+          </Box>
+        );
+      default:
+        return null;
     }
   };
 

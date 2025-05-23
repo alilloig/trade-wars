@@ -6,6 +6,7 @@ import { Transaction } from "@mysten/sui/transactions";
 interface OverseerDetailsProps {
   objectId: string;
   onBack: () => void;
+  onViewPlanets?: (universeId: string, universeName: string) => void;
 }
 
 interface UniverseDisplayData {
@@ -20,7 +21,7 @@ interface UniverseDisplayData {
   thoriumSource?: string;
 }
 
-export function OverseerDetails({ objectId, onBack }: OverseerDetailsProps) {
+export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDetailsProps) {
   const account = useCurrentAccount();
   const [joinedUniverseIds, setJoinedUniverseIds] = useState<string[]>([]);
   const [joiningUniverse, setJoiningUniverse] = useState<string | null>(null);
@@ -286,8 +287,11 @@ export function OverseerDetails({ objectId, onBack }: OverseerDetailsProps) {
                   cursor: "pointer"
                 }}
                 onClick={() => {
-                  // TODO: Handle universe click for joined universes
-                  console.log('Clicked joined universe:', universe.id);
+                  if (onViewPlanets) {
+                    onViewPlanets(universe.id, universe.name || 'Unknown Universe');
+                  } else {
+                    console.log('Clicked joined universe:', universe.id);
+                  }
                 }}
               >
                 <Flex direction="column" gap="1">
