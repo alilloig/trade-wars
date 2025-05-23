@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
-import { createElementSources, startUniverse, openUniverse, closeUniverse } from './transactions.js';
+import { createElementSources, startUniverse, openUniverse, closeUniverse, publishPackage } from './transactions.js';
 
 program
   .version("1.0.0")
@@ -96,6 +96,25 @@ program
       console.log('Universe closed with digest:', result.digest);
     } catch (error) {
       console.error('Error closing universe:', error.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('publish')
+  .description('Publish the Move package and update environment files')
+  .option('--package-path <path>', 'Path to the Move package directory', '../move')
+  .action(async (options) => {
+    try {
+      console.log('Publishing Move package...');
+      const result = await publishPackage({
+        packagePath: options.packagePath
+      });
+      console.log('\n🎉 Package published successfully!');
+      console.log('Package ID:', result.packageId);
+      console.log('Transaction Digest:', result.transactionDigest);
+    } catch (error) {
+      console.error('Error publishing package:', error.message);
       process.exit(1);
     }
   });

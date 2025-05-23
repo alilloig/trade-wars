@@ -3,6 +3,7 @@
 interface ImportMetaEnv {
   readonly VITE_TRADE_WARS_PKG_DEV: string
   readonly VITE_TRADE_WARS_ID_DEV: string
+  readonly VITE_TRADE_WARS_INFO_DEV: string
 }
 
 interface ImportMeta {
