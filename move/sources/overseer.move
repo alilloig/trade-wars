@@ -57,7 +57,7 @@ entry fun join_universe(
     ctx: &mut TxContext,
 ) {
     assert!(!self.has_joined_universe(object::id(universe)), EOverseerAlreadyJoinedUniverse);
-    assert!(universe.get_info().open(), EUniverseNotOpen);
+    assert!(universe.open(), EUniverseNotOpen);
     // aux variable for the universe id
     let universe_id = object::id(universe);
     // Initialize a new universe table in the empire

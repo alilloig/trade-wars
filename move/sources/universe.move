@@ -95,11 +95,6 @@ public(package) fun planets(self: &UniverseInfo): u8 {
     self.planets
 }
 
-/// Returns whether the universe is open for registration
-public(package) fun open(self: &UniverseInfo): bool {
-    self.open
-}
-
 // ::setters
 /// Sets the universe info as open
 public(package) fun open_universe_info(self: &mut UniverseInfo) {
@@ -114,8 +109,11 @@ public(package) fun close_universe_info(self: &mut UniverseInfo) {
 /// The main Universe object that represents a game world
 public struct Universe has key, store {
     id: UID,
-    /// Basic information about the universe
-    info: UniverseInfo,
+    name: String,
+    galaxies: u8,
+    systems: u8,
+    planets: u8,
+    open: bool,
     /// List of available planets that have not been claimed
     free_planets: vector<PlanetInfo>,
     /// ID of the Erbium source for this universe
@@ -126,10 +124,8 @@ public struct Universe has key, store {
     thorium_source: Option<ID>,
 }
 
-// ::getters
-/// Returns the info for this universe
-public(package) fun info(self: &Universe): UniverseInfo {
-    self.info
+public fun open(self: &Universe): bool {
+    self.open
 }
 
 /// Returns the Erbium source for this universe
@@ -159,7 +155,11 @@ public(package) fun create_universe(
 ): (Universe, UniverseCreatorCap) {
     let universe = Universe {
         id: object::new(ctx),
-        info,
+        name: info.name,
+        galaxies: info.galaxies,
+        systems: info.systems,
+        planets: info.planets,
+        open: info.open,
         erbium_source: option::none(),
         lanthanum_source: option::none(),
         thorium_source: option::none(),
@@ -175,11 +175,6 @@ public(package) fun create_universe(
 }
 
 // ::getters
-/// Returns the UniverseInfo for this Universe
-public(package) fun get_info(self: &Universe): UniverseInfo {
-    self.info
-}
-
 /// Returns a mutable reference to the free planets vector
 fun get_free_planet(self: &mut Universe, randomizer: &mut RandomGenerator): PlanetInfo {
     randomizer.shuffle<PlanetInfo>(&mut self.free_planets);
@@ -202,13 +197,13 @@ public(package) fun link_elements_sources(
 /// Opens the universe for player registration (only callable by the universe creator)
 public(package) fun open_universe(self: &mut Universe, creator_cap: &UniverseCreatorCap) {
     assert!(creator_has_access(self, creator_cap), ENotUniverseCreator);
-    self.info.open = true;
+    self.open = true;
 }
 
 /// Closes the universe for player registration (only callable by the universe creator)
 public(package) fun close_universe(self: &mut Universe, creator_cap: &UniverseCreatorCap) {
     assert!(creator_has_access(self, creator_cap), ENotUniverseCreator);
-    self.info.open = false;
+    self.open = false;
 }
 
 // ::Universe Package Functions
@@ -232,7 +227,7 @@ public(package) fun occupy_planet(
     let info = get_free_planet(self, randomizer);
     planet::create_and_share_planet(
         info,
-        self.info.systems,
+        self.systems,
         erb_source,
         lan_source,
         tho_source,
@@ -289,11 +284,11 @@ public(package) fun get_universe_display(
         b"is open".to_string(),
     ];
     let values = vector[
-        b"{info.name}".to_string(),
-        b"{info.galaxies}".to_string(),
-        b"{info.systems}".to_string(),
-        b"{info.planets}".to_string(),
-        b"{info.open}".to_string(),
+        b"{name}".to_string(),
+        b"{galaxies}".to_string(),
+        b"{systems}".to_string(),
+        b"{planets}".to_string(),
+        b"{open}".to_string(),
     ];
     display::new_with_fields<Universe>(
         publisher,
