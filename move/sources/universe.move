@@ -70,7 +70,7 @@ public(package) fun create_universe_info(
         galaxies,
         systems,
         planets,
-        open: false,
+        open
     }
 }
 

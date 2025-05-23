@@ -94,6 +94,10 @@ fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsInfo {
     }
 }
 
+fun add_open_universe(self: &mut TradeWarsInfo, universe_id: ID) {
+    self.open_universes.push_back(universe_id);
+}
+
 // === ::TradeWarsInfo Public Functions ===
 
 /// Returns an array of Universe IDs only for open universes so clients can fetch their respective Display
@@ -237,6 +241,7 @@ entry fun create_element_sources(
 /// Anyone can call this to start their own universe of the game by paying a fee
 entry fun public_start_universe(
     self: &mut TradeWars,
+    info: &mut TradeWarsInfo,
     erb_source: &ElementSource<ERBIUM>,
     lan_source: &ElementSource<LANTHANUM>,
     tho_source: &ElementSource<THORIUM>,
@@ -256,6 +261,7 @@ entry fun public_start_universe(
     // Start Universe
     start_universe(
         self,
+        info,
         erb_source,
         lan_source,
         tho_source,
@@ -273,6 +279,7 @@ entry fun public_start_universe(
 entry fun admin_start_universe(
     self: &mut TradeWars,
     _cap: &GameAdminCap,
+    info: &mut TradeWarsInfo,
     erb_source: &ElementSource<ERBIUM>,
     lan_source: &ElementSource<LANTHANUM>,
     tho_source: &ElementSource<THORIUM>,
@@ -287,6 +294,7 @@ entry fun admin_start_universe(
     // Start Universe
     start_universe(
         self,
+        info,
         erb_source,
         lan_source,
         tho_source,
@@ -437,6 +445,7 @@ fun init(otw: TRADE_WARS, ctx: &mut TxContext) {
 #[allow(lint(self_transfer))]
 fun start_universe(
     self: &mut TradeWars,
+    game_info: &mut TradeWarsInfo,
     erb_source: &ElementSource<ERBIUM>,
     lan_source: &ElementSource<LANTHANUM>,
     tho_source: &ElementSource<THORIUM>,
@@ -466,7 +475,10 @@ fun start_universe(
     let universe_id = object::id(&universe);
     // Register the universe in the game object
     self.universes.insert<ID, UniverseInfo>(universe_id, info);
-
+    // Include the universe ID on the list of open universes on game info object if the universe is created as open
+    if (open) {
+        game_info.add_open_universe(universe_id);
+    };
     // Create the universe element source for erbium
     let universe_erbium_source = universe_element_source::create_universe_element_source<ERBIUM>(
         universe_id,
