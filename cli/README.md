@@ -1,5 +1,22 @@
 # Trade Wars CLI tool
 
+## Quick Start
+
+To set up and start a new Trade Wars game, run these commands in order:
+
+```console
+$ trade-wars publish
+$ trade-wars create-sources
+$ trade-wars start-universe
+$ trade-wars refill-sources
+```
+
+This will:
+1. Deploy the Move contracts to the blockchain
+2. Create the main element sources for mining resources
+3. Start a new universe named "alpha" with default settings
+4. Refill the universe sources so players can start mining
+
 ## Commands
 
 ### Publish Package
@@ -52,15 +69,28 @@ Creates the objects that mint all the resources mined by players. Needs to be ru
 ### Start a new universe
 
 ```console
-$ trade-wars start-universe --name <name> --galaxies <number> --systems <number> --planets <number>
+$ trade-wars start-universe [--name <name>] [--galaxies <number>] [--systems <number>] [--planets <number>] [--open <boolean>]
 ```
 Creates a new game server with the specified parameters.
 
 **Options:**
-- `--name <name>`: Universe name (required)
-- `--galaxies <number>`: Number of galaxies (1-255, required)
-- `--systems <number>`: Number of systems (1-255, required)  
-- `--planets <number>`: Number of planets (1-255, required)
+- `--name <name>`: Universe name (default: alpha)
+- `--galaxies <number>`: Number of galaxies (1-255, default: 1)
+- `--systems <number>`: Number of systems per galaxy (1-255, default: 1)  
+- `--planets <number>`: Number of planets per system (1-255, default: 255)
+- `--open <boolean>`: Whether the universe should be open for registration (default: true)
+
+**What it does:**
+- Creates a new Universe object with the specified parameters
+- Creates a UniverseCreatorCap for admin control
+- Creates three UniverseElementSource objects (ERBIUM, LANTHANUM, THORIUM) linked to the universe
+- Updates `cli/.env` with:
+  - `{NAME}_UNIVERSE_ID` (Universe object)
+  - `{NAME}_UNIVERSE_CAP_ID` (UniverseCreatorCap object)
+  - `{NAME}_ERB_ELEMENT_SOURCE_ID` (ERBIUM universe source object)
+  - `{NAME}_LAN_ELEMENT_SOURCE_ID` (LANTHANUM universe source object)
+  - `{NAME}_THO_ELEMENT_SOURCE_ID` (THORIUM universe source object)
+- Records the transaction digest in `tx-digests.json`
 
 ### Open Universe
 
@@ -83,3 +113,20 @@ Closes a universe for player registration.
 **Options:**
 - `--universe-cap <id>`: Universe creator capability ID (required)
 - `--universe <id>`: Universe ID (required)
+
+### Refill Sources
+
+```console
+$ trade-wars refill-sources [--universe <name>]
+```
+Refills the universe element sources for mining by transferring resources from the main element sources.
+
+**Options:**
+- `--universe <name>`: Universe name to refill sources for (default: alpha)
+
+**What it does:**
+- Calls the `refill_universe_source<T>` function for each element type (ERBIUM, LANTHANUM, THORIUM)
+- Uses element source IDs from `.env` (ERB_SOURCE_ID, LAN_SOURCE_ID, THO_SOURCE_ID)
+- Uses universe-specific IDs from `.env` based on the universe name (e.g., ALPHA_UNIVERSE_CAP_ID, ALPHA_ERB_ELEMENT_SOURCE_ID, etc.)
+- Records the transaction digest in `tx-digests.json`
+- Returns the quantity of each element refilled

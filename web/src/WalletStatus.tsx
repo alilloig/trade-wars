@@ -1,5 +1,5 @@
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Container, Flex, Heading, Text, Box } from "@radix-ui/themes";
+import { Container, Heading, Text, Box } from "@radix-ui/themes";
 import { OverseerObjects } from "./OverseerObjects";
 
 interface WalletStatusProps {
@@ -54,10 +54,7 @@ export function WalletStatus({ onSelectObject }: WalletStatusProps) {
               In <em>Trade Wars</em>, you play as an Overseer—the ruler of an expanding interplanetary empire. Gather resources produced by your planets, invest them to upgrade your infrastructure, and trade with the Company to obtain Nova. Nova enables you to reach and trade with other planets, acquiring the resources your empire needs to thrive.
             </Text>
 
-            <Box mt="5" p="3" style={{ 
-              border: "2px solid #d4af37", 
-              borderRadius: "8px", 
-              backgroundColor: "rgba(212, 175, 55, 0.1)",
+            <Box mt="3" p="3" style={{
               textAlign: "center"
             }}>
               <Heading size="4" weight="bold" style={{ color: "#d4af37" }}>

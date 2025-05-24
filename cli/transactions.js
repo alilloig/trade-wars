@@ -309,30 +309,16 @@ export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1,
         [`${universeNameUpper}_THO_ELEMENT_SOURCE_ID`]: thoElementSourceId
     });
     
-    // Update web .env file (excludes UniverseCreatorCap)
-    console.log('Updating web .env file...');
-    updateWebEnvFile({
-        [`VITE_${universeNameUpper}_UNIVERSE_ID_DEV`]: universeId,
-        [`VITE_${universeNameUpper}_ERB_ELEMENT_SOURCE_ID_DEV`]: erbElementSourceId,
-        [`VITE_${universeNameUpper}_LAN_ELEMENT_SOURCE_ID_DEV`]: lanElementSourceId,
-        [`VITE_${universeNameUpper}_THO_ELEMENT_SOURCE_ID_DEV`]: thoElementSourceId
-    });
-    
     // Update tx-digests.json file
     updateTxDigestsFile(`start-universe-${name.toLowerCase()}`, result.digest);
     
-    console.log(`\n✅ Universe "${name}" created and .env files updated successfully!`);
+    console.log(`\n✅ Universe "${name}" created and CLI .env file updated successfully!`);
     console.log('CLI (.env):');
     console.log(`  ${universeNameUpper}_UNIVERSE_ID=${universeId}`);
     console.log(`  ${universeNameUpper}_UNIVERSE_CAP_ID=${universeCapId}`);
     console.log(`  ${universeNameUpper}_ERB_ELEMENT_SOURCE_ID=${erbElementSourceId}`);
     console.log(`  ${universeNameUpper}_LAN_ELEMENT_SOURCE_ID=${lanElementSourceId}`);
     console.log(`  ${universeNameUpper}_THO_ELEMENT_SOURCE_ID=${thoElementSourceId}`);
-    console.log('\nWeb (.env):');
-    console.log(`  VITE_${universeNameUpper}_UNIVERSE_ID_DEV=${universeId}`);
-    console.log(`  VITE_${universeNameUpper}_ERB_ELEMENT_SOURCE_ID_DEV=${erbElementSourceId}`);
-    console.log(`  VITE_${universeNameUpper}_LAN_ELEMENT_SOURCE_ID_DEV=${lanElementSourceId}`);
-    console.log(`  VITE_${universeNameUpper}_THO_ELEMENT_SOURCE_ID_DEV=${thoElementSourceId}`);
     
     return result;
 }
@@ -471,6 +457,144 @@ export async function closeUniverse({ universeCap, universe }) {
     
     // Update tx-digests.json file
     updateTxDigestsFile('close-universe', result.digest);
+    
+    return result;
+}
+
+// Refill sources transaction function
+export async function refillSources({ universeName }) {
+    // Validate parameters
+    if (!universeName || typeof universeName !== 'string') {
+        throw new Error('Universe name is required and must be a string');
+    }
+
+    // Reload environment variables to get the latest IDs
+    dotenv.config({ override: true });
+    
+    // Get element source IDs from env
+    const ERB_SOURCE_ID = process.env.ERB_SOURCE_ID;
+    const LAN_SOURCE_ID = process.env.LAN_SOURCE_ID;
+    const THO_SOURCE_ID = process.env.THO_SOURCE_ID;
+    
+    // Check if element source IDs are available
+    if (!ERB_SOURCE_ID || !LAN_SOURCE_ID || !THO_SOURCE_ID) {
+        throw new Error(
+            'Element source IDs not found in .env file. Please run "create-sources" command first.\n' +
+            'Missing: ' + [
+                !ERB_SOURCE_ID && 'ERB_SOURCE_ID',
+                !LAN_SOURCE_ID && 'LAN_SOURCE_ID', 
+                !THO_SOURCE_ID && 'THO_SOURCE_ID'
+            ].filter(Boolean).join(', ')
+        );
+    }
+
+    // Get universe-specific IDs from env
+    const universeNameUpper = universeName.toUpperCase();
+    const UNIVERSE_CAP_ID = process.env[`${universeNameUpper}_UNIVERSE_CAP_ID`];
+    const ERB_ELEMENT_SOURCE_ID = process.env[`${universeNameUpper}_ERB_ELEMENT_SOURCE_ID`];
+    const LAN_ELEMENT_SOURCE_ID = process.env[`${universeNameUpper}_LAN_ELEMENT_SOURCE_ID`];
+    const THO_ELEMENT_SOURCE_ID = process.env[`${universeNameUpper}_THO_ELEMENT_SOURCE_ID`];
+    
+    // Check if universe-specific IDs are available
+    if (!UNIVERSE_CAP_ID || !ERB_ELEMENT_SOURCE_ID || !LAN_ELEMENT_SOURCE_ID || !THO_ELEMENT_SOURCE_ID) {
+        throw new Error(
+            `Universe "${universeName}" IDs not found in .env file. Please run "start-universe --name ${universeName}" command first.\n` +
+            'Missing: ' + [
+                !UNIVERSE_CAP_ID && `${universeNameUpper}_UNIVERSE_CAP_ID`,
+                !ERB_ELEMENT_SOURCE_ID && `${universeNameUpper}_ERB_ELEMENT_SOURCE_ID`,
+                !LAN_ELEMENT_SOURCE_ID && `${universeNameUpper}_LAN_ELEMENT_SOURCE_ID`,
+                !THO_ELEMENT_SOURCE_ID && `${universeNameUpper}_THO_ELEMENT_SOURCE_ID`
+            ].filter(Boolean).join(', ')
+        );
+    }
+
+    // Validate that package ID is set
+    if (!TRADE_WARS_PKG) {
+        throw new Error('TRADE_WARS_PKG environment variable is required. Please run "publish" command first.');
+    }
+
+    console.log(`Refilling sources for universe "${universeName}"...`);
+    console.log('Using element source IDs:');
+    console.log('ERB_SOURCE_ID:', ERB_SOURCE_ID);
+    console.log('LAN_SOURCE_ID:', LAN_SOURCE_ID);
+    console.log('THO_SOURCE_ID:', THO_SOURCE_ID);
+    console.log(`Using universe "${universeName}" IDs:`);
+    console.log(`${universeNameUpper}_UNIVERSE_CAP_ID:`, UNIVERSE_CAP_ID);
+    console.log(`${universeNameUpper}_ERB_ELEMENT_SOURCE_ID:`, ERB_ELEMENT_SOURCE_ID);
+    console.log(`${universeNameUpper}_LAN_ELEMENT_SOURCE_ID:`, LAN_ELEMENT_SOURCE_ID);
+    console.log(`${universeNameUpper}_THO_ELEMENT_SOURCE_ID:`, THO_ELEMENT_SOURCE_ID);
+
+    const { client, keypair } = getClientAndKeypair();
+    
+    const refill_tx = new Transaction();
+    
+    // Refill ERBIUM source
+    refill_tx.moveCall({
+        target: `${TRADE_WARS_PKG}::element_source::refill_universe_source`,
+        typeArguments: [`${TRADE_WARS_PKG}::erbium::ERBIUM`],
+        arguments: [
+            refill_tx.object(ERB_SOURCE_ID),
+            refill_tx.object(ERB_ELEMENT_SOURCE_ID),
+            refill_tx.object(UNIVERSE_CAP_ID)
+        ],
+    });
+
+    // Refill LANTHANUM source
+    refill_tx.moveCall({
+        target: `${TRADE_WARS_PKG}::element_source::refill_universe_source`,
+        typeArguments: [`${TRADE_WARS_PKG}::lanthanum::LANTHANUM`],
+        arguments: [
+            refill_tx.object(LAN_SOURCE_ID),
+            refill_tx.object(LAN_ELEMENT_SOURCE_ID),
+            refill_tx.object(UNIVERSE_CAP_ID)
+        ],
+    });
+
+    // Refill THORIUM source
+    refill_tx.moveCall({
+        target: `${TRADE_WARS_PKG}::element_source::refill_universe_source`,
+        typeArguments: [`${TRADE_WARS_PKG}::thorium::THORIUM`],
+        arguments: [
+            refill_tx.object(THO_SOURCE_ID),
+            refill_tx.object(THO_ELEMENT_SOURCE_ID),
+            refill_tx.object(UNIVERSE_CAP_ID)
+        ],
+    });
+
+    // Sign and execute the transaction
+    const result = await client.signAndExecuteTransaction({
+        transaction: refill_tx,
+        signer: keypair,
+        requestType: 'WaitForLocalExecution',
+        options: {
+            showEffects: true,
+            showEvents: true,
+            showObjectChanges: true,
+            showReturnValues: true,
+        },
+    });
+
+    console.log(`Sources refilled successfully for universe "${universeName}"!`);
+    console.log('Transaction digest:', result.digest);
+    
+    // Log return values if available (refill quantities)
+    if (result.returnValues && result.returnValues.length > 0) {
+        console.log('\nRefill quantities:');
+        if (result.returnValues[0]) {
+            console.log('ERB refill quantity:', result.returnValues[0]);
+        }
+        if (result.returnValues[1]) {
+            console.log('LAN refill quantity:', result.returnValues[1]);
+        }
+        if (result.returnValues[2]) {
+            console.log('THO refill quantity:', result.returnValues[2]);
+        }
+    }
+    
+    // Update tx-digests.json file
+    updateTxDigestsFile(`refill-sources-${universeName.toLowerCase()}`, result.digest);
+    
+    console.log(`\n✅ Universe "${universeName}" sources refilled successfully!`);
     
     return result;
 }

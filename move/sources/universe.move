@@ -221,6 +221,7 @@ public(package) fun occupy_planet(
     erb_source: &UniverseElementSource<ERBIUM>,
     lan_source: &UniverseElementSource<LANTHANUM>,
     tho_source: &UniverseElementSource<THORIUM>,
+    now: u64,
     randomizer: &mut RandomGenerator,
     ctx: &mut TxContext,
 ): PlanetCap {
@@ -231,6 +232,7 @@ public(package) fun occupy_planet(
         erb_source,
         lan_source,
         tho_source,
+        now,
         ctx,
     )
 }

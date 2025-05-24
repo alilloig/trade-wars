@@ -2,6 +2,7 @@ import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
 import { Flex, Heading, Text, Card, Box, Button } from "@radix-ui/themes";
 import { useState, useEffect } from "react";
 import { Transaction } from "@mysten/sui/transactions";
+import { PlanetDetails } from "./PlanetDetails";
 
 interface PlanetViewProps {
   overseerId: string;
@@ -21,6 +22,7 @@ interface PlanetData {
 export function PlanetView({ overseerId, universeId, universeName, onBack }: PlanetViewProps) {
   const account = useCurrentAccount();
   const [planetIds, setPlanetIds] = useState<string[]>([]);
+  const [selectedPlanet, setSelectedPlanet] = useState<{id: string, data: PlanetData} | null>(null);
   
   // Get environment variables
   const packageId = import.meta.env.VITE_TRADE_WARS_PKG_DEV;
@@ -39,7 +41,7 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
   };
   
   // Query the overseer object to verify it has joined the universe
-  const { data: overseerData, isPending: overseerPending, error: overseerError } = useSuiClientQuery(
+  const { isPending: overseerPending, error: overseerError } = useSuiClientQuery(
     "getObject",
     {
       id: overseerId,
@@ -54,7 +56,7 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
   );
 
   // Query the planet IDs using the new get_universe_planets function
-  const { data: planetIdsData, isPending: planetIdsPending, error: planetIdsError } = useSuiClientQuery(
+  const { data: planetIdsData, isPending: planetIdsPending, error: planetIdsError, refetch: refetchPlanetIds } = useSuiClientQuery(
     "devInspectTransactionBlock",
     {
       transactionBlock: createPlanetIdsTransaction(),
@@ -111,7 +113,6 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
         
         setPlanetIds(ids);
       } catch (error) {
-        console.error('Error parsing planet IDs:', error);
         setPlanetIds([]);
       }
     } else {
@@ -122,7 +123,7 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
 
 
   // Query planet objects once we have their IDs
-  const { data: planetsData, isPending: planetsPending } = useSuiClientQuery(
+  const { data: planetsData, refetch: refetchPlanetsData } = useSuiClientQuery(
     "multiGetObjects",
     {
       ids: planetIds,
@@ -191,6 +192,24 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
 
   const planets = planetsData?.map(extractPlanetData) || [];
 
+  // If a planet is selected, show its details
+  if (selectedPlanet) {
+    return (
+      <PlanetDetails
+        planetId={selectedPlanet.id}
+        overseerId={overseerId}
+        universeId={universeId}
+        planetData={selectedPlanet.data}
+        onBack={() => {
+          setSelectedPlanet(null);
+          // Refresh planet data when returning from planet details
+          refetchPlanetIds();
+          refetchPlanetsData();
+        }}
+      />
+    );
+  }
+
   return (
     <Flex direction="column" gap="4">
       <Flex justify="between" align="center">
@@ -210,7 +229,23 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
             Universe: {universeName} | Planets Controlled: {planets.length}
           </Text>
           <Text size="1" style={{ color: "#a0a0a0", fontFamily: 'monospace' }}>
-            Universe ID: {universeId}
+            Universe ID: {" "}
+            <a 
+              href={`https://devnet.suivision.xyz/object/${universeId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+            >
+              <span 
+                style={{ 
+                  color: "#6b9bd2", 
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                {universeId}
+              </span>
+            </a>
           </Text>
         </Flex>
       </Card>
@@ -229,7 +264,7 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
           </Card>
         ) : (
           <Flex direction="column" gap="3">
-            {planets.map((planet, index) => (
+            {planets.map((planet) => (
               <Card 
                 key={planet.id} 
                 style={{ 
@@ -238,7 +273,7 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
                   cursor: "pointer"
                 }}
                 onClick={() => {
-                  // TODO: Handle planet click for detailed planet view
+                  setSelectedPlanet({ id: planet.id, data: planet });
                 }}
               >
                 <Flex align="center" gap="3">

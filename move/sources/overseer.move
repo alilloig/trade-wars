@@ -56,6 +56,7 @@ entry fun join_universe(
     lan_source: &UniverseElementSource<LANTHANUM>,
     tho_source: &UniverseElementSource<THORIUM>,
     r: &Random,
+    c: &Clock,
     ctx: &mut TxContext,
 ) {
     assert!(!self.has_joined_universe(object::id(universe)), EOverseerAlreadyJoinedUniverse);
@@ -71,6 +72,7 @@ entry fun join_universe(
         erb_source,
         lan_source,
         tho_source,
+        c.timestamp_ms(),
         &mut r.new_generator(ctx),
         ctx,
     );
@@ -154,6 +156,8 @@ public fun joined_universes(self: &Overseer): vector<ID> {
 public fun get_universe_planets(self: &Overseer, universe: ID): vector<ID> {
     *self.planets.borrow<ID, vector<ID>>(universe)
 }
+
+
 
 // === Admin Functions ===
 // === Package Functions ===

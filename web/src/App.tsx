@@ -106,7 +106,8 @@ function App() {
       backgroundSize: "cover",
       backgroundPosition: "center",
       backgroundAttachment: "fixed",
-      backgroundRepeat: "no-repeat"
+      backgroundRepeat: "no-repeat",
+      fontFamily: 'Orbitron, sans-serif'
     }}>
       <Flex
         position="sticky"
@@ -125,7 +126,6 @@ function App() {
           <Heading 
             style={{ 
               cursor: 'pointer',
-              fontFamily: 'Orbitron, sans-serif',
               fontWeight: '700',
               fontOpticalSizing: 'auto',
               margin: 0,

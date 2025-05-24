@@ -13,9 +13,8 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   const [creationStatus, setCreationStatus] = useState<string>("");
   const pollingTimeoutRef = useRef<number | undefined>(undefined);
   
-  // Get the package ID and object ID from environment variables
+  // Get the package ID from environment variables
   const packageId = import.meta.env.VITE_TRADE_WARS_PKG_DEV;
-  const objectId = import.meta.env.VITE_TRADE_WARS_ID_DEV;
   
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   
@@ -73,8 +72,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
           setIsCreating(false);
           setTimeout(() => setCreationStatus(""), 5000);
         }
-      }).catch((error) => {
-        console.error('Error during polling:', error);
+      }).catch((_error) => {
         setCreationStatus("Error checking for new overseer. Please refresh manually.");
         setIsCreating(false);
         setTimeout(() => setCreationStatus(""), 5000);
@@ -102,15 +100,13 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
         transaction: tx,
       },
       {
-        onSuccess: (result) => {
-          console.log('Overseer transaction submitted successfully:', result);
+        onSuccess: (_result) => {
           setCreationStatus("Transaction submitted! Waiting for confirmation...");
           
           // Start polling for the new overseer
           startPollingForNewOverseer(currentCount);
         },
-        onError: (error) => {
-          console.error('Failed to create Overseer:', error);
+        onError: (_error) => {
           setCreationStatus("Failed to create overseer. Please try again.");
           setIsCreating(false);
           setTimeout(() => setCreationStatus(""), 5000);
@@ -126,7 +122,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   if (!packageId) {
     return (
       <Box my="3">
-        <Heading size="4" mb="2">Your Empires</Heading>
+        <Heading size="4" mb="2">Your Overseers</Heading>
         <Text style={{ color: "#ff6b6b" }}>
           Package ID not configured. Please set VITE_TRADE_WARS_PACKAGE_ID in your environment variables.
         </Text>
@@ -137,7 +133,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   if (error) {
     return (
       <Box my="3">
-        <Heading size="4" mb="2">Your Empires</Heading>
+        <Heading size="4" mb="2">Your Overseers</Heading>
         <Text style={{ color: "#ff6b6b" }}>Error loading Overseers: {error.message}</Text>
       </Box>
     );
@@ -146,7 +142,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
   if (isPending || !data) {
     return (
       <Box my="3">
-        <Heading size="4" mb="2">Your Empires</Heading>
+        <Heading size="4" mb="2">Your Overseers</Heading>
         <Text style={{ color: "#a0a0a0" }}>Loading Overseers...</Text>
       </Box>
     );
@@ -161,7 +157,7 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
 
   return (
     <Box my="3">
-      <Heading size="4" mb="2">Your Empires</Heading>
+      <Heading size="4" mb="2">Your Overseers</Heading>
       {data.data.length === 0 ? (
         <Flex direction="column" gap="3">
           <Text style={{ color: "#e0e0e0" }}>No Overseer found</Text>
