@@ -97,7 +97,7 @@ public(package) fun update_mines_parameters<T>(
 
 /// Extracts a specific amount of element from this source
 public(package) fun extract<T>(self: &mut UniverseElementSource<T>, amount: u64): Balance<T> {
-    assert!(self.reserves.value() <= amount, ENotEnoughReserves);
+    assert!(self.reserves.value() >= amount, ENotEnoughReserves);
     let extraction = self.reserves.split(amount);
     if (self.reserves.value() < self.refill_threshold) {
         event::emit(UniverseElementSourceLowReserves {
