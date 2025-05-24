@@ -1,5 +1,22 @@
 # Trade Wars CLI tool
 
+## Quick Start
+
+To set up and start a new Trade Wars game, run these commands in order:
+
+```console
+$ trade-wars publish
+$ trade-wars create-sources
+$ trade-wars start-universe
+$ trade-wars refill-sources
+```
+
+This will:
+1. Deploy the Move contracts to the blockchain
+2. Create the main element sources for mining resources
+3. Start a new universe named "alpha" with default settings
+4. Refill the universe sources so players can start mining
+
 ## Commands
 
 ### Publish Package
@@ -83,3 +100,20 @@ Closes a universe for player registration.
 **Options:**
 - `--universe-cap <id>`: Universe creator capability ID (required)
 - `--universe <id>`: Universe ID (required)
+
+### Refill Sources
+
+```console
+$ trade-wars refill-sources [--universe <name>]
+```
+Refills the universe element sources for mining by transferring resources from the main element sources.
+
+**Options:**
+- `--universe <name>`: Universe name to refill sources for (default: alpha)
+
+**What it does:**
+- Calls the `refill_universe_source<T>` function for each element type (ERBIUM, LANTHANUM, THORIUM)
+- Uses element source IDs from `.env` (ERB_SOURCE_ID, LAN_SOURCE_ID, THO_SOURCE_ID)
+- Uses universe-specific IDs from `.env` based on the universe name (e.g., ALPHA_UNIVERSE_CAP_ID, ALPHA_ERB_ELEMENT_SOURCE_ID, etc.)
+- Records the transaction digest in `tx-digests.json`
+- Returns the quantity of each element refilled

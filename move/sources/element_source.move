@@ -88,7 +88,7 @@ entry fun refill_universe_source<T>(
     _cap: &UniverseCreatorCap,
 ): u64 {
     assert!(
-        self.sources_refill_threshold < universe_source.reserves_value<T>(),
+        self.sources_refill_threshold > universe_source.reserves_value<T>(),
         EUnnecessaryRefill,
     );
     universe_source.update_mines_parameters<T>(self.mine_parameters);

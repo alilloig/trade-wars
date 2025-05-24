@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { program } from "commander";
-import { createElementSources, startUniverse, openUniverse, closeUniverse } from './transactions.js';
-import { publishPackage } from "./publish.js";
+import { createElementSources, startUniverse, openUniverse, closeUniverse, refillSources } from './transactions.js';
+import { publishPackage } from './publish.js';
 
 program
   .version("1.0.0")
@@ -122,6 +122,24 @@ program
       console.log('Transaction Digest:', result.transactionDigest);
     } catch (error) {
       console.error('Error publishing package:', error.message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('refill-sources')
+  .description('Refill universe element sources for mining')
+  .option('--universe <name>', 'Universe name to refill sources for', 'alpha')
+  .action(async (options) => {
+    try {
+      console.log(`Refilling sources for universe "${options.universe}"...`);
+      const result = await refillSources({
+        universeName: options.universe
+      });
+      console.log('✅ Sources refilled successfully!');
+      console.log('Transaction Digest:', result.digest);
+    } catch (error) {
+      console.error('Error refilling sources:', error.message);
       process.exit(1);
     }
   });

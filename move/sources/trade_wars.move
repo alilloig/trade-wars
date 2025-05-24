@@ -35,7 +35,7 @@ const ENotUniverseCreator: u64 = 3;
 const EGameNotInitialized: u64 = 4;
 // === Constants ===
 /// Production factor for initial Erbium mines
-const InitialErbiumMinesProductionFactor: u64 = 2;
+const InitialErbiumMinesProductionFactor: u64 = 5;
 /// Erbium cost to upgrade an Erbium mine
 const InitialErbiumMinesErbiumUpgradeCost: u64 = 10;
 /// Lanthanum cost to upgrade an Erbium mine
@@ -43,7 +43,7 @@ const InitialErbiumMinesLanthanumUpgradeCost: u64 = 5;
 /// Thorium cost to upgrade an Erbium mine
 const InitialErbiumMinesThoriumUpgradeCost: u64 = 5;
 /// Production factor for initial Lanthanum mines
-const InitialLanthanumMinesProductionFactor: u64 = 2;
+const InitialLanthanumMinesProductionFactor: u64 = 5;
 /// Erbium cost to upgrade a Lanthanum mine
 const InitialLanthanumMinesErbiumUpgradeCost: u64 = 5;
 /// Lanthanum cost to upgrade a Lanthanum mine
@@ -51,7 +51,7 @@ const InitialLanthanumMinesLanthanumUpgradeCost: u64 = 10;
 /// Thorium cost to upgrade a Lanthanum mine
 const InitialLanthanumMinesThoriumUpgradeCost: u64 = 5;
 /// Production factor for initial Thorium mines
-const InitialThoriumMinesProductionFactor: u64 = 2;
+const InitialThoriumMinesProductionFactor: u64 = 5;
 /// Erbium cost to upgrade a Thorium mine
 const InitialThoriumMinesErbiumUpgradeCost: u64 = 5;
 /// Lanthanum cost to upgrade a Thorium mine
