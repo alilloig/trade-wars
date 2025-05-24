@@ -73,7 +73,6 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
           setTimeout(() => setCreationStatus(""), 5000);
         }
       }).catch((error) => {
-        console.error('Error during polling:', error);
         setCreationStatus("Error checking for new overseer. Please refresh manually.");
         setIsCreating(false);
         setTimeout(() => setCreationStatus(""), 5000);
@@ -102,14 +101,12 @@ export function OverseerObjects({ onSelectObject }: OverseerObjectsProps) {
       },
       {
         onSuccess: (result) => {
-          console.log('Overseer transaction submitted successfully:', result);
           setCreationStatus("Transaction submitted! Waiting for confirmation...");
           
           // Start polling for the new overseer
           startPollingForNewOverseer(currentCount);
         },
         onError: (error) => {
-          console.error('Failed to create Overseer:', error);
           setCreationStatus("Failed to create overseer. Please try again.");
           setIsCreating(false);
           setTimeout(() => setCreationStatus(""), 5000);

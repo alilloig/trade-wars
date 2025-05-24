@@ -155,12 +155,10 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
   // Join universe handler
   const handleJoinUniverse = async (universe: UniverseDisplayData) => {
     if (!account) {
-      console.error('No account connected');
       return;
     }
 
     if (joiningUniverse) {
-      console.log('Already joining a universe');
       return;
     }
 

@@ -188,7 +188,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
         }
       }
     } catch (error) {
-      console.error(`Error parsing u64 at index ${index}:`, error);
+      // Silently fail and return 0
     }
     return 0;
   };
@@ -304,7 +304,6 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
         },
         {
           onSuccess: (result) => {
-            console.log(`Successfully upgraded ${mineType} mine:`, result);
             setUpgradeStatus(`${mineType} mine upgraded successfully!`);
             
             // Add delay to ensure blockchain indexing before refetch
@@ -315,7 +314,6 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
             }, 2000);
           },
           onError: (error) => {
-            console.error(`Failed to upgrade ${mineType} mine:`, error);
             setUpgradeStatus(`Failed to upgrade ${mineType} mine: ${error.message}`);
             setIsUpgrading(null);
             setTimeout(() => setUpgradeStatus(""), 5000);
@@ -323,7 +321,6 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
         },
       );
     } catch (error) {
-      console.error(`Error upgrading ${mineType} mine:`, error);
       setUpgradeStatus(`Error upgrading ${mineType} mine`);
       setIsUpgrading(null);
       setTimeout(() => setUpgradeStatus(""), 3000);

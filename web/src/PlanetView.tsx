@@ -113,7 +113,6 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
         
         setPlanetIds(ids);
       } catch (error) {
-        console.error('Error parsing planet IDs:', error);
         setPlanetIds([]);
       }
     } else {
