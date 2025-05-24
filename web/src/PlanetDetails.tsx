@@ -85,7 +85,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
   // Create a single PTB with all planet getter function calls
   const createPlanetDataTransaction = () => {
     const tx = new Transaction();
-    const now = Date.now(); // Current timestamp in milliseconds
+    // const now = Date.now(); // Current timestamp in milliseconds
     
     // Reserves (need timestamp)
     tx.moveCall({
@@ -303,7 +303,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
           transaction: tx,
         },
         {
-          onSuccess: (result) => {
+          onSuccess: (_result) => {
             setUpgradeStatus(`${mineType} mine upgraded successfully!`);
             
             // Add delay to ensure blockchain indexing before refetch

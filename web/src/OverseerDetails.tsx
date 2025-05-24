@@ -186,7 +186,7 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
           transaction: tx,
         },
         {
-          onSuccess: (result) => {
+          onSuccess: (_result) => {
             // Add delay to ensure blockchain indexing before refetch
             setTimeout(() => {
               overseerRefetch();
@@ -194,7 +194,7 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
               setJoiningUniverse(null);
             }, 2000);
           },
-          onError: (error) => {
+          onError: (_error) => {
             setJoiningUniverse(null);
           },
         },
