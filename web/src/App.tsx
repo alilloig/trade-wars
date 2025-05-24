@@ -126,7 +126,6 @@ function App() {
           <Heading 
             style={{ 
               cursor: 'pointer',
-              fontFamily: 'Orbitron, sans-serif',
               fontWeight: '700',
               fontOpticalSizing: 'auto',
               margin: 0,

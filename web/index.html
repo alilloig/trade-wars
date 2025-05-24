@@ -62,6 +62,24 @@
         width: 100vw;
         overflow-x: hidden;
       }
+      
+      /* Apply Orbitron font globally with high specificity */
+      .radix-themes, 
+      .radix-themes *,
+      body, 
+      body *,
+      #root,
+      #root * {
+        font-family: 'Orbitron', sans-serif !important;
+      }
+      
+      /* Preserve monospace for specific elements */
+      code, 
+      pre, 
+      .monospace,
+      [style*="monospace"] {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace !important;
+      }
     </style>
   </head>
   <body>
