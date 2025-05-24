@@ -69,15 +69,28 @@ Creates the objects that mint all the resources mined by players. Needs to be ru
 ### Start a new universe
 
 ```console
-$ trade-wars start-universe --name <name> --galaxies <number> --systems <number> --planets <number>
+$ trade-wars start-universe [--name <name>] [--galaxies <number>] [--systems <number>] [--planets <number>] [--open <boolean>]
 ```
 Creates a new game server with the specified parameters.
 
 **Options:**
-- `--name <name>`: Universe name (required)
-- `--galaxies <number>`: Number of galaxies (1-255, required)
-- `--systems <number>`: Number of systems (1-255, required)  
-- `--planets <number>`: Number of planets (1-255, required)
+- `--name <name>`: Universe name (default: alpha)
+- `--galaxies <number>`: Number of galaxies (1-255, default: 1)
+- `--systems <number>`: Number of systems per galaxy (1-255, default: 1)  
+- `--planets <number>`: Number of planets per system (1-255, default: 255)
+- `--open <boolean>`: Whether the universe should be open for registration (default: true)
+
+**What it does:**
+- Creates a new Universe object with the specified parameters
+- Creates a UniverseCreatorCap for admin control
+- Creates three UniverseElementSource objects (ERBIUM, LANTHANUM, THORIUM) linked to the universe
+- Updates `cli/.env` with:
+  - `{NAME}_UNIVERSE_ID` (Universe object)
+  - `{NAME}_UNIVERSE_CAP_ID` (UniverseCreatorCap object)
+  - `{NAME}_ERB_ELEMENT_SOURCE_ID` (ERBIUM universe source object)
+  - `{NAME}_LAN_ELEMENT_SOURCE_ID` (LANTHANUM universe source object)
+  - `{NAME}_THO_ELEMENT_SOURCE_ID` (THORIUM universe source object)
+- Records the transaction digest in `tx-digests.json`
 
 ### Open Universe
 

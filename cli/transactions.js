@@ -309,30 +309,16 @@ export async function startUniverse({ name = 'alpha', galaxies = 1, systems = 1,
         [`${universeNameUpper}_THO_ELEMENT_SOURCE_ID`]: thoElementSourceId
     });
     
-    // Update web .env file (excludes UniverseCreatorCap)
-    console.log('Updating web .env file...');
-    updateWebEnvFile({
-        [`VITE_${universeNameUpper}_UNIVERSE_ID_DEV`]: universeId,
-        [`VITE_${universeNameUpper}_ERB_ELEMENT_SOURCE_ID_DEV`]: erbElementSourceId,
-        [`VITE_${universeNameUpper}_LAN_ELEMENT_SOURCE_ID_DEV`]: lanElementSourceId,
-        [`VITE_${universeNameUpper}_THO_ELEMENT_SOURCE_ID_DEV`]: thoElementSourceId
-    });
-    
     // Update tx-digests.json file
     updateTxDigestsFile(`start-universe-${name.toLowerCase()}`, result.digest);
     
-    console.log(`\n✅ Universe "${name}" created and .env files updated successfully!`);
+    console.log(`\n✅ Universe "${name}" created and CLI .env file updated successfully!`);
     console.log('CLI (.env):');
     console.log(`  ${universeNameUpper}_UNIVERSE_ID=${universeId}`);
     console.log(`  ${universeNameUpper}_UNIVERSE_CAP_ID=${universeCapId}`);
     console.log(`  ${universeNameUpper}_ERB_ELEMENT_SOURCE_ID=${erbElementSourceId}`);
     console.log(`  ${universeNameUpper}_LAN_ELEMENT_SOURCE_ID=${lanElementSourceId}`);
     console.log(`  ${universeNameUpper}_THO_ELEMENT_SOURCE_ID=${thoElementSourceId}`);
-    console.log('\nWeb (.env):');
-    console.log(`  VITE_${universeNameUpper}_UNIVERSE_ID_DEV=${universeId}`);
-    console.log(`  VITE_${universeNameUpper}_ERB_ELEMENT_SOURCE_ID_DEV=${erbElementSourceId}`);
-    console.log(`  VITE_${universeNameUpper}_LAN_ELEMENT_SOURCE_ID_DEV=${lanElementSourceId}`);
-    console.log(`  VITE_${universeNameUpper}_THO_ELEMENT_SOURCE_ID_DEV=${thoElementSourceId}`);
     
     return result;
 }
