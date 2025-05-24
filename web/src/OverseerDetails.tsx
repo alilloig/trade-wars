@@ -240,7 +240,23 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
       <Card style={{ backgroundColor: "rgba(212, 175, 55, 0.1)", border: "1px solid #d4af37" }}>
         <Flex direction="column" gap="2">
           <Text weight="bold" style={{ color: "#d4af37" }}>
-            Overseer ID: {objectId}
+            Overseer ID: {" "}
+            <a 
+              href={`https://devnet.suivision.xyz/object/${objectId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+            >
+              <span 
+                style={{ 
+                  color: "#6b9bd2", 
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                {objectId}
+              </span>
+            </a>
           </Text>
           <Text size="2" style={{ color: "#a0a0a0" }}>
             Universes Joined: {joinedUniverseIds.length} | Open Universes Available: {openUniverseIds.length}
