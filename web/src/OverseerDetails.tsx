@@ -68,10 +68,8 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
   useEffect(() => {
     if (overseerData?.data?.content && 'fields' in overseerData.data.content) {
       const fields = overseerData.data.content.fields as any;
-      console.log('Overseer fields:', fields); // Debug log
       if (fields.universes && Array.isArray(fields.universes)) {
         setJoinedUniverseIds(fields.universes);
-        console.log('Joined universe IDs:', fields.universes); // Debug log
       }
     }
   }, [overseerData]);
@@ -80,9 +78,7 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
   const openUniverseIds: string[] = (() => {
     if (tradeWarsInfoData?.data?.content && 'fields' in tradeWarsInfoData.data.content) {
       const fields = tradeWarsInfoData.data.content.fields as any;
-      console.log('TradeWarsInfo fields:', fields); // Debug log
       if (fields.open_universes && Array.isArray(fields.open_universes)) {
-        console.log('Open universe IDs:', fields.open_universes); // Debug log
         return fields.open_universes;
       }
     }
@@ -91,7 +87,6 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
 
   // Filter out joined universes from open universes
   const availableUniverseIds = openUniverseIds.filter(id => !joinedUniverseIds.includes(id));
-  console.log('Available universe IDs:', availableUniverseIds); // Debug log
 
   // Query universe objects for display information
   const { data: joinedUniversesData } = useSuiClientQuery(
@@ -129,8 +124,6 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
     const id = universeObject?.data?.objectId || '';
     const content = universeObject?.data?.content;
     
-    console.log('Universe object ID:', id); // Debug log
-    
     // Get data from content fields (primary source)
     let name, galaxies, systems, planets, open, erbiumSource, lanthanumSource, thoriumSource;
     
@@ -144,9 +137,6 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
       erbiumSource = fields.erbium_source;
       lanthanumSource = fields.lanthanum_source;
       thoriumSource = fields.thorium_source;
-      
-      console.log(`Universe ${id}: ${name} - ${galaxies}g/${systems}s/${planets}p - Open: ${open}`);
-      console.log(`Element sources - ERB: ${erbiumSource}, LAN: ${lanthanumSource}, THO: ${thoriumSource}`);
     }
     
     return {
@@ -176,7 +166,6 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
 
     try {
       setJoiningUniverse(universe.id);
-      console.log('Joining universe:', universe.id);
 
       const tx = new Transaction();
       
@@ -200,8 +189,6 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
         },
         {
           onSuccess: (result) => {
-            console.log('Successfully joined universe:', result);
-            
             // Add delay to ensure blockchain indexing before refetch
             setTimeout(() => {
               overseerRefetch();
@@ -210,13 +197,11 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
             }, 2000);
           },
           onError: (error) => {
-            console.error('Failed to join universe:', error);
             setJoiningUniverse(null);
           },
         },
       );
     } catch (error) {
-      console.error('Error joining universe:', error);
       setJoiningUniverse(null);
     }
   };
@@ -290,8 +275,6 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
                 onClick={() => {
                   if (onViewPlanets) {
                     onViewPlanets(universe.id, universe.name || 'Unknown Universe');
-                  } else {
-                    console.log('Clicked joined universe:', universe.id);
                   }
                 }}
               >
@@ -363,37 +346,7 @@ export function OverseerDetails({ objectId, onBack, onViewPlanets }: OverseerDet
         )}
       </Box>
 
-      {/* Debug Information */}
-      <Card style={{ backgroundColor: "rgba(128, 128, 128, 0.1)", border: "1px solid #808080" }}>
-        <Text weight="bold" style={{ color: "#808080" }}>Debug Info</Text>
-        <Text size="1" style={{ color: "#808080" }}>
-          Check console for detailed data fetching logs
-        </Text>
-        <Box mt="2">
-          <Text size="1" style={{ color: "#808080" }}>
-            Joined Universe Count: {joinedUniverseIds.length} | 
-            Open Universe Count: {openUniverseIds.length} |
-            Available Count: {availableUniverseIds.length}
-          </Text>
-        </Box>
-        <Box mt="1">
-          <Text size="1" style={{ color: "#808080" }}>
-            TradeWarsInfo ID: {tradeWarsInfoId}
-          </Text>
-        </Box>
-        <Box mt="1">
-          <Text size="1" style={{ color: "#808080" }}>
-            Package ID: {packageId}
-          </Text>
-        </Box>
-        {availableUniversesData && availableUniversesData.length > 0 && (
-          <Box mt="2">
-            <Text size="1" style={{ color: "#808080" }}>
-              First Universe Type: {availableUniversesData[0]?.data?.type}
-            </Text>
-          </Box>
-        )}
-      </Card>
+
     </Flex>
   );
 } 

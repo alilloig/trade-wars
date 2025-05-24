@@ -56,7 +56,7 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
   );
 
   // Query the planet IDs using the new get_universe_planets function
-  const { data: planetIdsData, isPending: planetIdsPending, error: planetIdsError } = useSuiClientQuery(
+  const { data: planetIdsData, isPending: planetIdsPending, error: planetIdsError, refetch: refetchPlanetIds } = useSuiClientQuery(
     "devInspectTransactionBlock",
     {
       transactionBlock: createPlanetIdsTransaction(),
@@ -124,7 +124,7 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
 
 
   // Query planet objects once we have their IDs
-  const { data: planetsData } = useSuiClientQuery(
+  const { data: planetsData, refetch: refetchPlanetsData } = useSuiClientQuery(
     "multiGetObjects",
     {
       ids: planetIds,
@@ -201,7 +201,12 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
         overseerId={overseerId}
         universeId={universeId}
         planetData={selectedPlanet.data}
-        onBack={() => setSelectedPlanet(null)}
+        onBack={() => {
+          setSelectedPlanet(null);
+          // Refresh planet data when returning from planet details
+          refetchPlanetIds();
+          refetchPlanetsData();
+        }}
       />
     );
   }
@@ -225,7 +230,23 @@ export function PlanetView({ overseerId, universeId, universeName, onBack }: Pla
             Universe: {universeName} | Planets Controlled: {planets.length}
           </Text>
           <Text size="1" style={{ color: "#a0a0a0", fontFamily: 'monospace' }}>
-            Universe ID: {universeId}
+            Universe ID: {" "}
+            <a 
+              href={`https://devnet.suivision.xyz/object/${universeId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+            >
+              <span 
+                style={{ 
+                  color: "#6b9bd2", 
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                {universeId}
+              </span>
+            </a>
           </Text>
         </Flex>
       </Card>

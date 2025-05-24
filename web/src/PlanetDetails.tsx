@@ -371,7 +371,7 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
           <Box style={{ flexShrink: 0 }}>
             <img 
               src={getPlanetImage(planetData.imageIndex)}
-              alt={`Planet ${planetData.galaxy}-${planetData.system}-${planetData.position}`}
+              alt={`Planet ${planetData.galaxy + 1}-${planetData.system + 1}-${planetData.position + 1}`}
               style={{
                 width: "60px",
                 height: "60px",
@@ -384,14 +384,26 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
           {/* Planet Info */}
           <Flex direction="column" gap="1" style={{ flex: 1 }}>
             <Text weight="bold" size="4" style={{ color: "#4baf4b" }}>
-              🪐 Galaxy {planetData.galaxy} - System {planetData.system} - Position {planetData.position}
+              🪐 Galaxy {planetData.galaxy + 1} - System {planetData.system + 1} - Position {planetData.position + 1}
             </Text>
-            <Text size="2" style={{ color: "#a0a0a0" }}>
-              Coordinates: G{planetData.galaxy}:S{planetData.system}:P{planetData.position}
-            </Text>
-            <Text size="1" style={{ color: "#a0a0a0", fontFamily: 'monospace' }}>
-              {planetId}
-            </Text>
+            <a 
+              href={`https://devnet.suivision.xyz/object/${planetId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+            >
+              <Text 
+                size="1" 
+                style={{ 
+                  color: "#6b9bd2", 
+                  fontFamily: 'monospace',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                {planetId}
+              </Text>
+            </a>
           </Flex>
         </Flex>
       </Card>
@@ -405,9 +417,24 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
 
       {/* Planet Reserves */}
       <Box>
-        <Heading size="3" mb="3" style={{ color: "#d4af37" }}>
-          💎 Element Reserves
-        </Heading>
+        <Flex justify="between" align="center" mb="3">
+          <Heading size="3" style={{ color: "#d4af37" }}>
+            💎 Element Reserves
+          </Heading>
+          <Button 
+            onClick={() => planetDataRefetch()}
+            size="2"
+            variant="soft"
+            style={{ 
+              backgroundColor: "rgba(212, 175, 55, 0.2)",
+              color: "#d4af37",
+              border: "1px solid #d4af37",
+              cursor: "pointer"
+            }}
+          >
+            🔄 Refresh
+          </Button>
+        </Flex>
         <Flex direction="row" gap="3">
           <Card style={{ backgroundColor: "rgba(255, 99, 71, 0.1)", border: "1px solid #ff6347", flex: 1 }}>
             <Flex direction="column" align="center" gap="2">
@@ -452,6 +479,9 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
                 onClick={() => handleUpgradeMine('erbium')}
                 disabled={!canAffordUpgrade('erbium') || isUpgrading === 'erbium'}
                 color={canAffordUpgrade('erbium') ? "orange" : "gray"}
+                style={{ 
+                  cursor: (canAffordUpgrade('erbium') && isUpgrading !== 'erbium') ? "pointer" : "not-allowed"
+                }}
               >
                 {isUpgrading === 'erbium' ? 'Upgrading...' : 'Upgrade'}
               </Button>
@@ -474,6 +504,9 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
                 onClick={() => handleUpgradeMine('lanthanum')}
                 disabled={!canAffordUpgrade('lanthanum') || isUpgrading === 'lanthanum'}
                 color={canAffordUpgrade('lanthanum') ? "green" : "gray"}
+                style={{ 
+                  cursor: (canAffordUpgrade('lanthanum') && isUpgrading !== 'lanthanum') ? "pointer" : "not-allowed"
+                }}
               >
                 {isUpgrading === 'lanthanum' ? 'Upgrading...' : 'Upgrade'}
               </Button>
@@ -496,6 +529,9 @@ export function PlanetDetails({ planetId, overseerId, universeId, planetData, on
                 onClick={() => handleUpgradeMine('thorium')}
                 disabled={!canAffordUpgrade('thorium') || isUpgrading === 'thorium'}
                 color={canAffordUpgrade('thorium') ? "purple" : "gray"}
+                style={{ 
+                  cursor: (canAffordUpgrade('thorium') && isUpgrading !== 'thorium') ? "pointer" : "not-allowed"
+                }}
               >
                 {isUpgrading === 'thorium' ? 'Upgrading...' : 'Upgrade'}
               </Button>
