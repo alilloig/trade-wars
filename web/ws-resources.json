@@ -1,0 +1,43 @@
+{
+    "headers": {
+      "/index.html": {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "max-age=86400"
+      },
+      "/assets/*.js": {
+        "Content-Type": "application/javascript; charset=utf-8",
+        "Cache-Control": "max-age=31536000"
+      },
+      "/assets/*.css": {
+        "Content-Type": "text/css; charset=utf-8",
+        "Cache-Control": "max-age=31536000"
+      },
+      "/*.png": {
+        "Content-Type": "image/png",
+        "Cache-Control": "max-age=31536000"
+      },
+      "/*.jpg": {
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "max-age=31536000"
+      },
+      "/*.jpeg": {
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "max-age=31536000"
+      },
+      "/*.ico": {
+        "Content-Type": "image/x-icon",
+        "Cache-Control": "max-age=31536000"
+      }
+    },
+    "routes": {
+      "/*": "/index.html"
+    },
+    "metadata": {
+        "link": "https://trade-wars.wal.app",
+        "image_url": "https://trade-wars.wal.app/cargo-ship.png",
+        "description": "Trade Wars - A blockchain-based strategy game built on Sui",
+        "project_url": "https://github.com/alilloig/trade-wars",
+        "creator": "@contract-hero"
+    },
+    "ignore": []
+  }
