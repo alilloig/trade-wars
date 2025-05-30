@@ -5,6 +5,7 @@
 /// Planets are the primary resource-generating assets that players control.
 module trade_wars::planet;
 
+// === Imports ===
 use sui::balance::{Self, Balance};
 use sui::display::{Self, Display};
 use sui::package::Publisher;
@@ -18,38 +19,18 @@ use trade_wars::universe_element_source::UniverseElementSource;
 // === Errors ===
 /// Error code when an operation is attempted by someone who is not the planet's overseer
 const ENotPlanetOverseer: u64 = 0;
-/// Error code when there's not enough Erbium to perform an operation
-const ENotEnoughERBIUM: u64 = 0;
-/// Error code when there's not enough Lanthanum to perform an operation
-const ENotEnoughLANTHANUM: u64 = 1;
-/// Error code when there's not enough Thorium to perform an operation
-const ENotEnoughTHORIUM: u64 = 2;
 /// Error code when there's not enough resources to perform an operation
 const ENotEnoughResources: u64 = 3;
 
 // === Constants ===
 
 // === Structs ===
-// === ::PlanetCap ===
 /// Cap that grants ownership and control over a planet
 public struct PlanetCap has store {
     /// ID of the planet this capability controls
     planet: ID,
 }
 
-/// Creates a new PlanetCap for the given planet ID
-fun create_planet_capability(planet: ID): PlanetCap {
-    PlanetCap {
-        planet,
-    }
-}
-
-/// Returns the ID of the planet this capability controls
-public(package) fun planet(self: &PlanetCap): ID {
-    self.planet
-}
-
-// ::PlanetInfo
 /// Information about a planet's location in the universe
 public struct PlanetInfo has copy, drop, store {
     /// Galaxy coordinate
@@ -60,21 +41,6 @@ public struct PlanetInfo has copy, drop, store {
     position: u8,
 }
 
-// === ::PlanetInfo Package Functions ===
-/// Creates a new PlanetInfo with the given coordinates
-public(package) fun create_planet_info(galaxy: u8, system: u8, position: u8): PlanetInfo {
-    PlanetInfo { galaxy, system, position }
-}
-
-// === ::PlanetInfo Public Functions ===
-/// Calculates the travel distance between two planets
-/// TODO: What is the formula for this?
-public fun calculate_travel_distance(self: &PlanetInfo, destination: &PlanetInfo): u64 {
-    let distance = 0;
-    distance
-}
-
-// === ::Planet ===
 /// A planet with a mine that produces a specific element type
 public struct Planet has key {
     id: UID,
@@ -96,47 +62,27 @@ public struct Planet has key {
     thorium_store: Balance<THORIUM>,
 }
 
-// === ::Planet Private Functions ===
-/// Creates a new Planet and shares it, returning a capability to control it
-public(package) fun create_and_share_planet(
-    info: PlanetInfo,
-    system_size: u8,
-    erbium_source: &UniverseElementSource<ERBIUM>,
-    lanthanum_source: &UniverseElementSource<LANTHANUM>,
-    thorium_source: &UniverseElementSource<THORIUM>,
-    now: u64,
-    ctx: &mut TxContext,
-): PlanetCap {
-    let planet = Planet {
-        id: object::new(ctx),
-        info: info,
-        system_size: system_size,
-        erbium_mine: element_mine::create_mine<ERBIUM>(erbium_source, now),
-        erbium_store: balance::zero<ERBIUM>(),
-        lanthanum_mine: element_mine::create_mine<LANTHANUM>(lanthanum_source, now),
-        lanthanum_store: balance::zero<LANTHANUM>(),
-        thorium_mine: element_mine::create_mine<THORIUM>(thorium_source, now),
-        thorium_store: balance::zero<THORIUM>(),
-    };
-    let cap = create_planet_capability(object::id(&planet));
-    transfer::share_object(planet);
-    cap
-}
+// === Events ===
 
+
+// === Public Functions ===
+
+
+// === View Functions ===
 /// Returns the amount of erbium that the planet has in its stores and mines
-entry fun get_erbium_reserves(self: &Planet, c: &Clock): u64 {
+public fun get_erbium_reserves(self: &Planet, c: &Clock): u64 {
     let now = c.timestamp_ms();
     self.erbium_store.value<ERBIUM>() + self.erbium_mine.amount_produced(now)
 }
 
 /// Returns the amount of lanthanum that the planet has in its stores and mines
-entry fun get_lanthanum_reserves(self: &Planet, c: &Clock): u64 {
+public fun get_lanthanum_reserves(self: &Planet, c: &Clock): u64 {
     let now = c.timestamp_ms();
     self.lanthanum_store.value<LANTHANUM>() + self.lanthanum_mine.amount_produced(now)
 }
 
 /// Returns the amount of thorium that the planet has in its stores and mines
-entry fun get_thorium_reserves(self: &Planet, c: &Clock): u64 {
+public fun get_thorium_reserves(self: &Planet, c: &Clock): u64 {
     let now = c.timestamp_ms();
     self.thorium_store.value<THORIUM>() + self.thorium_mine.amount_produced(now)
 }
@@ -187,6 +133,53 @@ public fun get_thorium_mine_lanthanum_upgrade_cost(self: &Planet): u64 {
 
 public fun get_thorium_mine_thorium_upgrade_cost(self: &Planet): u64 {
     self.thorium_mine.thorium_upgrade_cost()
+}
+
+/// Calculates the travel distance between two planets
+/// TODO: What is the formula for this?
+public fun calculate_travel_distance(self: &PlanetInfo, destination: &PlanetInfo): u64 {
+    let distance = 0;
+    distance
+}
+
+// === Admin Functions ===
+
+
+// === Package Functions ===
+/// Returns the ID of the planet this capability controls
+public(package) fun planet(self: &PlanetCap): ID {
+    self.planet
+}
+
+/// Creates a new PlanetInfo with the given coordinates
+public(package) fun create_planet_info(galaxy: u8, system: u8, position: u8): PlanetInfo {
+    PlanetInfo { galaxy, system, position }
+}
+
+/// Creates a new Planet and shares it, returning a capability to control it
+public(package) fun create_and_share_planet(
+    info: PlanetInfo,
+    system_size: u8,
+    erbium_source: &UniverseElementSource<ERBIUM>,
+    lanthanum_source: &UniverseElementSource<LANTHANUM>,
+    thorium_source: &UniverseElementSource<THORIUM>,
+    now: u64,
+    ctx: &mut TxContext,
+): PlanetCap {
+    let planet = Planet {
+        id: object::new(ctx),
+        info: info,
+        system_size: system_size,
+        erbium_mine: element_mine::create_mine<ERBIUM>(erbium_source, now),
+        erbium_store: balance::zero<ERBIUM>(),
+        lanthanum_mine: element_mine::create_mine<LANTHANUM>(lanthanum_source, now),
+        lanthanum_store: balance::zero<LANTHANUM>(),
+        thorium_mine: element_mine::create_mine<THORIUM>(thorium_source, now),
+        thorium_store: balance::zero<THORIUM>(),
+    };
+    let cap = create_planet_capability(object::id(&planet));
+    transfer::share_object(planet);
+    cap
 }
 
 /// Upgrades a planet's erbium mine to increase its production
@@ -326,14 +319,14 @@ public(package) fun get_planet_display(
     )
 }
 
-// === Events ===
-// === Method Aliases ===
-// === Public Functions ===
-// === View Functions ===
-// === Admin Functions ===
-// === Package Functions ===
-
 // === Private Functions ===
+/// Creates a new PlanetCap for the given planet ID
+fun create_planet_capability(planet: ID): PlanetCap {
+    PlanetCap {
+        planet,
+    }
+}
+
 /// Verifies that the capability has authority over this planet
 fun check_overseer_authority(self: &Planet, cap: &PlanetCap): bool {
     object::id(self) == cap.planet
@@ -366,5 +359,3 @@ fun has_enough_lanthanum(self: &Planet, lan_cost: u64, now: u64): bool {
 fun has_enough_thorium(self: &Planet, tho_cost: u64, now: u64): bool {
     self.thorium_store.value<THORIUM>() + self.thorium_mine.amount_produced(now) >= tho_cost
 }
-
-// === Test Functions ===
