@@ -6,29 +6,21 @@
 /// for upgrading facilities and other game mechanics.
 module trade_wars::erbium;
 
+// === Imports ===
 use sui::coin;
 use sui::url;
 
 // === Errors ===
+
 // === Constants ===
 
 // === Structs ===
 /// One-time witness for the ERBIUM module
 public struct ERBIUM has drop {}
 
-/// Witness type for erbium operations
-public struct ERB has copy, drop, store {}
+// === Events ===
 
-/// Returns the erbium witness
-public(package) fun get_erbium_witness(): ERB {
-    ERB {}
-}
-
-// === Method Aliases ===
-// === Public Functions ===
-// === View Functions ===
-
-// === Admin Functions ===
+// === Init Function ===
 /// Initializes the Erbium currency
 fun init(witness: ERBIUM, ctx: &mut TxContext) {
     // Create the Erbium currency, store the treasury capability and share the element mine
@@ -49,6 +41,12 @@ fun init(witness: ERBIUM, ctx: &mut TxContext) {
     transfer::public_transfer(treasury, ctx.sender());
 }
 
+// === Public Functions ===
+
+// === View Functions ===
+
+// === Admin Functions ===
+
 // === Package Functions ===
+
 // === Private Functions ===
-// === Test Functions ===
