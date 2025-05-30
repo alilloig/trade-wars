@@ -1,8 +1,10 @@
 // Copyright (c) Contract Hero
 // SPDX-License-Identifier: GPL-3.0-only
 
+///
 module trade_wars::element_source;
 
+// === Imports ===
 use sui::balance::Balance;
 use sui::coin::TreasuryCap;
 use trade_wars::mine_configuration_parameters::MineConfigurationParameters;
@@ -17,7 +19,6 @@ const InitialRefillQty: u64 = 1000000;
 const InitialRefillThreshold: u64 = 500000;
 
 // === Structs ===
-// === ::ElementSource ===
 /// ElementSource is a wrapper for treasury allowing permissionless minting of elements
 public struct ElementSource<phantom T> has key, store {
     id: UID,
@@ -27,7 +28,31 @@ public struct ElementSource<phantom T> has key, store {
     mine_parameters: MineConfigurationParameters<T>,
 }
 
-// === ::ElementSource Package Functions ===
+// === Events ===
+
+// === Init Function ===
+
+// === Public Functions ===
+/// Any universe admin can call this to refill its source if it's below the threshold
+entry fun refill_universe_source<T>(
+    self: &mut ElementSource<T>,
+    universe_source: &mut UniverseElementSource<T>,
+    _cap: &UniverseCreatorCap,
+): u64 {
+    assert!(
+        self.sources_refill_threshold > universe_source.reserves_value<T>(),
+        EUnnecessaryRefill,
+    );
+    universe_source.update_mines_parameters<T>(self.mine_parameters);
+    let refill_qty = self.get_sources_refill_qty<T>();
+    universe_source.join(self.mint_balance<T>(refill_qty))
+}
+
+// === View Functions ===
+
+// === Admin Functions ===
+
+// === Package Functions ===
 /// Creates a new ElementSource with the provided treasury and mine parameters
 public(package) fun create_source<T>(
     treasury: TreasuryCap<T>,
@@ -43,7 +68,6 @@ public(package) fun create_source<T>(
     }
 }
 
-// === ::ElementSource Package Getter Functions ===
 /// Returns the quantity used to refill universe sources
 public(package) fun get_sources_refill_qty<T>(self: &ElementSource<T>): u64 {
     self.sources_refill_qty
@@ -61,7 +85,6 @@ public(package) fun get_mine_parameters<T>(
     self.mine_parameters
 }
 
-// === ::ElementSource Package Setter Functions ===
 /// Sets the quantity used to refill universe sources
 public(package) fun set_sources_refill_qty<T>(self: &mut ElementSource<T>, qty: u64) {
     self.sources_refill_qty = qty;
@@ -80,38 +103,8 @@ public(package) fun set_mine_parameters<T>(
     self.mine_parameters = parameters;
 }
 
-// === ::ElementSource Entry Functions ===
-/// Any universe admin can call this to refill its source if it's below the threshold
-entry fun refill_universe_source<T>(
-    self: &mut ElementSource<T>,
-    universe_source: &mut UniverseElementSource<T>,
-    _cap: &UniverseCreatorCap,
-): u64 {
-    assert!(
-        self.sources_refill_threshold > universe_source.reserves_value<T>(),
-        EUnnecessaryRefill,
-    );
-    universe_source.update_mines_parameters<T>(self.mine_parameters);
-    let refill_qty = self.get_sources_refill_qty<T>();
-    universe_source.join(self.mint_balance<T>(refill_qty))
-}
-
-// === Events ===
-
-// === Method Aliases ===
-
-// === Public Functions ===
-
-// === View Functions ===
-
-// === Admin Functions ===
-
-// === Package Functions ===
-
 // === Private Functions ===
 /// Mints new tokens of the element type
 fun mint_balance<T>(self: &mut ElementSource<T>, amount: u64): Balance<T> {
     self.treasury.mint_balance<T>(amount)
 }
-
-// === Test Functions ===
