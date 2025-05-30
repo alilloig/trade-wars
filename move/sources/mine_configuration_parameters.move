@@ -1,6 +1,7 @@
 // Copyright (c) Contract Hero
 // SPDX-License-Identifier: GPL-3.0-only
 
+///
 module trade_wars::mine_configuration_parameters;
 
 // === Imports ===
@@ -19,7 +20,15 @@ public struct MineConfigurationParameters<phantom T> has copy, drop, store {
     thorium_upgrade_cost: u64,
 }
 
-// ::constructors
+// === Events ===
+
+// === Public Functions ===
+
+// === View Functions ===
+
+// === Admin Functions ===
+
+// === Package Functions ===
 /// Creates a new MineConfigurationParameters instance with the specified values
 public(package) fun create_mine_configuration_parameters<T>(
     production_factor: u64,
@@ -35,7 +44,7 @@ public(package) fun create_mine_configuration_parameters<T>(
     }
 }
 
-// ::getters
+
 /// Returns the production factor for mines of this element type
 public(package) fun get_production_factor<T>(self: &MineConfigurationParameters<T>): u64 {
     self.production_factor
@@ -56,25 +65,4 @@ public(package) fun get_thorium_upgrade_cost<T>(self: &MineConfigurationParamete
     self.thorium_upgrade_cost
 }
 
-// ::setters
-// ::public functions
-// ::view functions
-// ::admin functions
-// ::package functions
-// ::private functions
-
-// === Events ===
-
-// === Method Aliases ===
-
-// === Public Functions ===
-
-// === View Functions ===
-
-// === Admin Functions ===
-
-// === Package Functions ===
-
 // === Private Functions ===
-
-// === Test Functions ===
