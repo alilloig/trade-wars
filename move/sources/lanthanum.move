@@ -1,31 +1,26 @@
 // Copyright (c) Contract Hero
 // SPDX-License-Identifier: GPL-3.0-only
 
+/// Module for the Lanthanum resource, one of the three primary elements in Trade Wars.
+/// Lanthanum is implemented as a fungible token that can be mined, traded, and used
+/// for upgrading facilities and other game mechanics.
 module trade_wars::lanthanum;
 
+// === Imports ===
 use sui::coin;
 use sui::url;
 
 // === Errors ===
+
 // === Constants ===
 
 // === Structs ===
 /// One-time witness for the LANTHANUM module
 public struct LANTHANUM has drop {}
 
-/// Witness type for lanthanum operations
-public struct LAN has copy, drop, store {}
+// === Events ===
 
-/// Returns the lanthanum witness
-public(package) fun get_lanthanum_witness(): LAN {
-    LAN {}
-}
-
-// === Method Aliases ===
-// === Public Functions ===
-// === View Functions ===
-
-// === Admin Functions ===
+// === Init Function ===
 /// Initializes the Lanthanum currency
 fun init(witness: LANTHANUM, ctx: &mut TxContext) {
     // Create the Erbium currency, store the treasury capability and share the element mine
@@ -46,6 +41,12 @@ fun init(witness: LANTHANUM, ctx: &mut TxContext) {
     transfer::public_transfer(treasury, ctx.sender());
 }
 
+// === Public Functions ===
+
+// === View Functions ===
+
+// === Admin Functions ===
+
 // === Package Functions ===
+
 // === Private Functions ===
-// === Test Functions ===
