@@ -1,8 +1,10 @@
 // Copyright (c) Contract Hero
 // SPDX-License-Identifier: GPL-3.0-only
 
+///
 module trade_wars::overseer;
 
+// === Imports ===
 use sui::clock::Clock;
 use sui::object_table::{Self, ObjectTable};
 use sui::random::Random;
@@ -17,6 +19,7 @@ use trade_wars::universe_element_source::UniverseElementSource;
 // === Errors ===
 const EOverseerAlreadyJoinedUniverse: u64 = 0;
 const EUniverseNotOpen: u64 = 1;
+
 // === Constants ===
 
 // === Structs ===
@@ -28,17 +31,9 @@ public struct Overseer has key {
     empire: ObjectTable<ID, Table<ID, PlanetCap>>,
 }
 
-/// Creates a new Overseer object
-fun new_overseer(ctx: &mut TxContext): Overseer {
-    Overseer {
-        id: object::new(ctx),
-        universes: vector::empty(),
-        planets: table::new<ID, vector<ID>>(ctx),
-        empire: object_table::new<ID, Table<ID, PlanetCap>>(ctx),
-    }
-}
+// === Events ===
 
-// === Entry Functions ===
+// === Public Functions ===
 /// Creates and transfers a new Overseer object to the transaction sender
 entry fun vest_overseer(ctx: &mut TxContext) {
     transfer::transfer(new_overseer(ctx), ctx.sender())
@@ -49,6 +44,7 @@ entry fun vest_overseer(ctx: &mut TxContext) {
 // Get a &mut to address owned Overseer
 // MakeMoveCall tradewars.join_universe(overseer)
 // Allows an overseer to join a universe and be assigned a random planet
+///
 entry fun join_universe(
     self: &mut Overseer,
     universe: &mut Universe,
@@ -87,7 +83,7 @@ entry fun join_universe(
     vector::push_back(&mut self.universes, universe_id);
 }
 
-// Called by the player whenever they want to upgrade a planet's mine
+/// Called by the player whenever they want to upgrade a planet's mine
 entry fun upgrade_erbium_planet_mine(
     self: &Overseer,
     universe: ID,
@@ -107,6 +103,7 @@ entry fun upgrade_erbium_planet_mine(
     );
 }
 
+///
 entry fun upgrade_lanthanum_planet_mine(
     self: &Overseer,
     universe: ID,
@@ -126,6 +123,7 @@ entry fun upgrade_lanthanum_planet_mine(
     );
 }
 
+///
 entry fun upgrade_thorium_planet_mine(
     self: &Overseer,
     universe: ID,
@@ -145,31 +143,38 @@ entry fun upgrade_thorium_planet_mine(
     );
 }
 
-// === Events ===
-// === Method Aliases ===
-// === Public Functions ===
+// === View Functions ===
+///
 public fun joined_universes(self: &Overseer): vector<ID> {
     self.universes
 }
 
-// === View Functions ===
+///
 public fun get_universe_planets(self: &Overseer, universe: ID): vector<ID> {
     *self.planets.borrow<ID, vector<ID>>(universe)
 }
 
-
-
 // === Admin Functions ===
+
 // === Package Functions ===
+
 // === Private Functions ===
+/// Creates a new Overseer object
+fun new_overseer(ctx: &mut TxContext): Overseer {
+    Overseer {
+        id: object::new(ctx),
+        universes: vector::empty(),
+        planets: table::new<ID, vector<ID>>(ctx),
+        empire: object_table::new<ID, Table<ID, PlanetCap>>(ctx),
+    }
+}
+
 /// Checks if the overseer has already joined a specific universe
 fun has_joined_universe(self: &Overseer, universe: ID): bool {
     return vector::contains(&self.universes, &universe)
 }
 
-// Returns a &PlanetCap for the specified planet in the specified universe
+/// Returns a &PlanetCap for the specified planet in the specified universe
 fun get_planet_cap_ref(self: &Overseer, universe: ID, planet: ID): &PlanetCap {
     self.empire.borrow<ID, Table<ID, PlanetCap>>(universe).borrow(planet)
 }
-
-// === Test Functions ===

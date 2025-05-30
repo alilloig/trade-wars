@@ -5,6 +5,7 @@
 /// manages universe creation, and handles global game settings.
 module trade_wars::trade_wars;
 
+// === Imports ===
 use std::string::String;
 use sui::balance::{Self, Balance};
 use sui::clock::Clock;
@@ -33,6 +34,7 @@ const EClosingClosedUniverse: u64 = 2;
 const ENotUniverseCreator: u64 = 3;
 /// Error code when the game is not initialized
 const EGameNotInitialized: u64 = 4;
+
 // === Constants ===
 /// Production factor for initial Erbium mines
 const InitialErbiumMinesProductionFactor: u64 = 5;
@@ -68,7 +70,6 @@ public struct GameAdminCap has key {
     id: UID,
 }
 
-// === ::TradeWarsInfo ===
 /// Auxiliary object for keeping public game info, allowing gets without congesting main object.
 /// We trade having some duplicate info for having two shared objects spreading access to them
 /// so they get less penalized on consensus
@@ -82,42 +83,6 @@ public struct TradeWarsInfo has key {
     universe_creation_price: u64,
 }
 
-// === ::TradeWarsInfo Private Functions ===
-
-/// Creates a new TradeWarsInfo object
-fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsInfo {
-    TradeWarsInfo {
-        id: object::new(ctx),
-        open_universes: vector::empty<ID>(),
-        public_universe_creation: false,
-        universe_creation_price: 0,
-    }
-}
-
-fun add_open_universe(self: &mut TradeWarsInfo, universe_id: ID) {
-    self.open_universes.push_back(universe_id);
-}
-
-// === ::TradeWarsInfo Public Functions ===
-
-/// Returns an array of Universe IDs only for open universes so clients can fetch their respective Display
-public fun open_universes(self: &TradeWarsInfo): vector<ID> {
-    self.open_universes
-}
-
-/// Returns if universe creation is allowed
-public fun public_universe_creation(self: &TradeWarsInfo): bool {
-    self.public_universe_creation
-}
-
-/// Returns the universe creation price
-public fun universe_creation_price(self: &TradeWarsInfo): u64 {
-    self.universe_creation_price
-}
-
-
-
-// === ::TradeWars ===
 /// Main game object that manages universe creation and global game state
 public struct TradeWars has key {
     id: UID,
@@ -137,24 +102,137 @@ public struct TradeWars has key {
     universe_creation_fees: Balance<SUI>,
 }
 
-// === ::TradeWars Private Functions ===
-
-/// Creates a new TradeWars game instance
-fun new_game(_cap: &GameAdminCap, ctx: &mut TxContext): TradeWars {
-    TradeWars {
-        id: object::new(ctx),
-        erbium_source: option::none(),
-        lanthanum_source: option::none(),
-        thorium_source: option::none(),
-        universes: vec_map::empty(),
-        public_universe_creation: false,
-        universe_creation_price: 0,
-        universe_creation_fees: balance::zero<SUI>(),
-    }
+// === Events ===
+/// Event emitted when the Trade Wars game begins
+public struct TradeWarsBegin has copy, drop {
+    /// ID of the newly created TradeWars object
+    id: ID,
 }
 
-// === ::TradeWars Public Functions ===
-// This methods allow easy creation of new universes by just passing the element source ID
+// === Init Function ===
+/// Initializes the Trade Wars game
+fun init(otw: TRADE_WARS, ctx: &mut TxContext) {
+    // Create and send publisher object to owner
+    let publisher = package::claim(otw, ctx);
+    // Create  and transfer Universe display
+    let universe_display = universe::get_universe_display(&publisher, ctx);
+    transfer::public_transfer(universe_display, ctx.sender());
+    // Create and transfer Planet display
+    let planet_display = planet::get_planet_display(&publisher, ctx);
+    transfer::public_transfer(planet_display, ctx.sender());
+    // Transfer publisher object to owner
+    transfer::public_transfer(publisher, ctx.sender());
+    // Create CreatorCapability
+    let admin_cap = GameAdminCap {
+        id: object::new(ctx),
+    };
+    // Create new game
+    let trade_wars = new_game(&admin_cap, ctx);
+    event::emit(TradeWarsBegin {
+        id: object::id(&trade_wars),
+    });
+    // Transfer GameAdmin capability to owner
+    transfer::transfer(admin_cap, ctx.sender());
+    // Share the game object
+    transfer::share_object(trade_wars);
+    // Initialize the public info object and share it
+    let trade_wars_public_info = create_trade_wars_public_info(ctx);
+    transfer::share_object(trade_wars_public_info);
+}
+
+// === Public Functions ===
+/// Anyone can call this to start their own universe of the game by paying a fee
+entry fun public_start_universe(
+    self: &mut TradeWars,
+    info: &mut TradeWarsInfo,
+    erb_source: &ElementSource<ERBIUM>,
+    lan_source: &ElementSource<LANTHANUM>,
+    tho_source: &ElementSource<THORIUM>,
+    name: String,
+    galaxies: u8,
+    systems: u8,
+    planets: u8,
+    open: bool,
+    payment: Coin<SUI>,
+    clock: &Clock,
+    ctx: &mut TxContext,
+) {
+    // Check if the payment is enough
+    assert!(payment.value() >= self.universe_creation_price, EUniverseCreationInsufficientPayment);
+    // Transfer the payment to the Game vault
+    self.universe_creation_fees.join(payment.into_balance());
+    // Start Universe
+    start_universe(
+        self,
+        info,
+        erb_source,
+        lan_source,
+        tho_source,
+        name,
+        galaxies,
+        systems,
+        planets,
+        open,
+        clock,
+        ctx,
+    )
+}
+
+/// Opens registration on universe and updates the open state on both the central game and game info objects
+entry fun open_universe(
+    self: &mut TradeWars,
+    creator_cap: &UniverseCreatorCap,
+    game_info: &mut TradeWarsInfo,
+    universe: &mut Universe,
+) {
+    // Check the permissions for mutating the universe
+    assert!(universe::creator_has_access(universe, creator_cap), ENotUniverseCreator);
+    // Check the universe wasn't open before
+    assert!(!game_info.open_universes.contains(object::borrow_id(universe)), EOpeningOpenUniverse);
+    // Set the universe info on game object as open
+    self.universes[object::borrow_id(universe)].open_universe_info();
+    // Include the universe ID on the list of open universes on game info object
+    game_info.open_universes.push_back(object::id(universe));
+    // Set the actual universe object as open
+    universe.open_universe(creator_cap);
+}
+
+/// Close registration on universe and updates the open state on both the central game and game info objects
+entry fun close_universe(
+    self: &mut TradeWars,
+    creator_cap: &UniverseCreatorCap,
+    game_info: &mut TradeWarsInfo,
+    universe: &mut Universe,
+) {
+    // Check the permissions for mutating the universe
+    assert!(universe::creator_has_access(universe, creator_cap), ENotUniverseCreator);
+    // Set the universe info on game object as close
+    self.universes[object::borrow_id(universe)].close_universe_info();
+    // Delete the universe ID from the list of open universes on game info object
+    let (was_open, index) = game_info.open_universes.index_of(&object::id(universe));
+    assert!(was_open, EClosingClosedUniverse);
+    game_info.open_universes.remove(index);
+    // Set the actual universe object as open
+    universe.open_universe(creator_cap);
+}
+
+// === View Functions ===
+/// Returns an array of Universe IDs only for open universes so clients can fetch their respective Display
+public fun open_universes(self: &TradeWarsInfo): vector<ID> {
+    self.open_universes
+}
+
+/// Returns if universe creation is allowed
+public fun public_universe_creation(self: &TradeWarsInfo): bool {
+    self.public_universe_creation
+}
+
+/// Returns the universe creation price
+public fun universe_creation_price(self: &TradeWarsInfo): u64 {
+    self.universe_creation_price
+}
+
+/// This methods allow easy creation of new universes by just passing the element source ID
 /// Returns the ID of the global Erbium element source
 public fun erbium_source(self: &TradeWars): ID {
     assert!(option::is_some(&self.erbium_source), EGameNotInitialized);
@@ -173,9 +251,7 @@ public fun thorium_source(self: &TradeWars): ID {
     *self.thorium_source.borrow()
 }
 
-
-
-// === ::TradeWars Entry Functions ===
+// === Admin Functions ===
 /// After deployment of contracts we need to call this to store the elements TreasureCaps inside the element sources
 #[allow(lint(share_owned))]
 entry fun create_element_sources(
@@ -238,43 +314,6 @@ entry fun create_element_sources(
     transfer::public_share_object(tho_source);
 }
 
-/// Anyone can call this to start their own universe of the game by paying a fee
-entry fun public_start_universe(
-    self: &mut TradeWars,
-    info: &mut TradeWarsInfo,
-    erb_source: &ElementSource<ERBIUM>,
-    lan_source: &ElementSource<LANTHANUM>,
-    tho_source: &ElementSource<THORIUM>,
-    name: String,
-    galaxies: u8,
-    systems: u8,
-    planets: u8,
-    open: bool,
-    payment: Coin<SUI>,
-    clock: &Clock,
-    ctx: &mut TxContext,
-) {
-    // Check if the payment is enough
-    assert!(payment.value() >= self.universe_creation_price, EUniverseCreationInsufficientPayment);
-    // Transfer the payment to the Game vault
-    self.universe_creation_fees.join(payment.into_balance());
-    // Start Universe
-    start_universe(
-        self,
-        info,
-        erb_source,
-        lan_source,
-        tho_source,
-        name,
-        galaxies,
-        systems,
-        planets,
-        open,
-        clock,
-        ctx,
-    )
-}
-
 /// Game owner can always create new universes for free
 entry fun admin_start_universe(
     self: &mut TradeWars,
@@ -307,46 +346,6 @@ entry fun admin_start_universe(
         ctx,
     )
 }
-
-/// Opens registration on universe and updates the open state on both the central game and game info objects
-entry fun open_universe(
-    self: &mut TradeWars,
-    creator_cap: &UniverseCreatorCap,
-    game_info: &mut TradeWarsInfo,
-    universe: &mut Universe,
-) {
-    // Check the permissions for mutating the universe
-    assert!(universe::creator_has_access(universe, creator_cap), ENotUniverseCreator);
-    // Check the universe wasn't open before
-    assert!(!game_info.open_universes.contains(object::borrow_id(universe)), EOpeningOpenUniverse);
-    // Set the universe info on game object as open
-    self.universes[object::borrow_id(universe)].open_universe_info();
-    // Include the universe ID on the list of open universes on game info object
-    game_info.open_universes.push_back(object::id(universe));
-    // Set the actual universe object as open
-    universe.open_universe(creator_cap);
-}
-
-/// Close registration on universe and updates the open state on both the central game and game info objects
-entry fun close_universe(
-    self: &mut TradeWars,
-    creator_cap: &UniverseCreatorCap,
-    game_info: &mut TradeWarsInfo,
-    universe: &mut Universe,
-) {
-    // Check the permissions for mutating the universe
-    assert!(universe::creator_has_access(universe, creator_cap), ENotUniverseCreator);
-    // Set the universe info on game object as close
-    self.universes[object::borrow_id(universe)].close_universe_info();
-    // Delete the universe ID from the list of open universes on game info object
-    let (was_open, index) = game_info.open_universes.index_of(&object::id(universe));
-    assert!(was_open, EClosingClosedUniverse);
-    game_info.open_universes.remove(index);
-    // Set the actual universe object as open
-    universe.open_universe(creator_cap);
-}
-
-// Entry methods for modifying global game settings
 
 /// Sets the price for creating a universe
 entry fun set_universe_creation_fees(
@@ -397,50 +396,38 @@ entry fun set_mines_parameters<T>(
     );
 }
 
-// === Events ===
-/// Event emitted when the Trade Wars game begins
-public struct TradeWarsBegin has copy, drop {
-    /// ID of the newly created TradeWars object
-    id: ID,
-}
-
-// === Method Aliases ===
-// === Public Functions ===
-// === View Functions ===
-
-// === Admin Functions ===
-/// Initializes the Trade Wars game
-fun init(otw: TRADE_WARS, ctx: &mut TxContext) {
-    // Create and send publisher object to owner
-    let publisher = package::claim(otw, ctx);
-    // Create  and transfer Universe display
-    let universe_display = universe::get_universe_display(&publisher, ctx);
-    transfer::public_transfer(universe_display, ctx.sender());
-    // Create and transfer Planet display
-    let planet_display = planet::get_planet_display(&publisher, ctx);
-    transfer::public_transfer(planet_display, ctx.sender());
-    // Transfer publisher object to owner
-    transfer::public_transfer(publisher, ctx.sender());
-    // Create CreatorCapability
-    let admin_cap = GameAdminCap {
-        id: object::new(ctx),
-    };
-    // Create new game
-    let trade_wars = new_game(&admin_cap, ctx);
-    event::emit(TradeWarsBegin {
-        id: object::id(&trade_wars),
-    });
-    // Transfer GameAdmin capability to owner
-    transfer::transfer(admin_cap, ctx.sender());
-    // Share the game object
-    transfer::share_object(trade_wars);
-    // Initialize the public info object and share it
-    let trade_wars_public_info = create_trade_wars_public_info(ctx);
-    transfer::share_object(trade_wars_public_info);
-}
-
 // === Package Functions ===
+
 // === Private Functions ===
+/// Creates a new TradeWarsInfo object
+fun create_trade_wars_public_info(ctx: &mut TxContext): TradeWarsInfo {
+    TradeWarsInfo {
+        id: object::new(ctx),
+        open_universes: vector::empty<ID>(),
+        public_universe_creation: false,
+        universe_creation_price: 0,
+    }
+}
+
+/// Includes an Universe on the list of universes open for registration at the TradeWarsInfo
+fun add_open_universe(self: &mut TradeWarsInfo, universe_id: ID) {
+    self.open_universes.push_back(universe_id);
+}
+
+/// Creates a new TradeWars game instance
+fun new_game(_cap: &GameAdminCap, ctx: &mut TxContext): TradeWars {
+    TradeWars {
+        id: object::new(ctx),
+        erbium_source: option::none(),
+        lanthanum_source: option::none(),
+        thorium_source: option::none(),
+        universes: vec_map::empty(),
+        public_universe_creation: false,
+        universe_creation_price: 0,
+        universe_creation_fees: balance::zero<SUI>(),
+    }
+}
+
 /// Creates and starts a new universe in the game
 #[allow(lint(self_transfer))]
 fun start_universe(
@@ -522,11 +509,4 @@ fun start_universe(
     transfer::public_share_object(universe);
     // Transfer creator capability
     transfer::public_transfer(creator_capability, ctx.sender());
-}
-
-// === Test Functions ===
-/// Initialize the module for testing purposes
-#[test_only]
-public fun init_for_testing(ctx: &mut TxContext) {
-    init(TRADE_WARS {}, ctx);
 }

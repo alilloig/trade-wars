@@ -6,6 +6,7 @@
 /// allowing each universe to maintain its own independent economy.
 module trade_wars::universe_element_source;
 
+// === Imports ===
 use sui::balance::{Self, Balance};
 use sui::event;
 use trade_wars::mine_configuration_parameters::MineConfigurationParameters;
@@ -17,7 +18,6 @@ const ENotEnoughReserves: u64 = 0;
 // === Constants ===
 
 // === Structs ===
-
 /// Element source specific to a universe, holds production configuration
 /// and element reserves for a particular universe
 public struct UniverseElementSource<phantom T> has key, store {
@@ -34,7 +34,22 @@ public struct UniverseElementSource<phantom T> has key, store {
     mine_parameters: MineConfigurationParameters<T>,
 }
 
-// === ::UniverseElementSource Package Functions ===
+// === Events ===
+/// Event emitted when a source's reserves are running low
+public struct UniverseElementSourceLowReserves has copy, drop {
+    /// ID of the source with low reserves
+    id: ID,
+}
+
+// === Init Function ===
+
+// === Public Functions ===
+
+// === View Functions ===
+
+// === Admin Functions ===
+
+// === Package Functions ===
 /// Creates a new UniverseElementSource for the specified universe
 public(package) fun create_universe_element_source<T>(
     universe: ID,
@@ -53,7 +68,6 @@ public(package) fun create_universe_element_source<T>(
     }
 }
 
-// === ::UniverseElementSource Package Getters ===
 /// Returns the ID of the universe this source is connected to
 public(package) fun universe<T>(self: &UniverseElementSource<T>): ID {
     self.universe
@@ -81,7 +95,6 @@ public(package) fun reserves_value<T>(self: &UniverseElementSource<T>): u64 {
     self.reserves.value()
 }
 
-// === ::UniverseElementSource Package Setters ===
 /// Sets the refill threshold for this source
 public(package) fun set_refill_threshold<T>(self: &mut UniverseElementSource<T>, threshold: u64) {
     self.refill_threshold = threshold;
@@ -117,23 +130,4 @@ public(package) fun return_reserves<T>(self: &mut UniverseElementSource<T>, erb:
     self.reserves.join(erb);
 }
 
-// === Events ===
-/// Event emitted when a source's reserves are running low
-public struct UniverseElementSourceLowReserves has copy, drop {
-    /// ID of the source with low reserves
-    id: ID,
-}
-
-// === Method Aliases ===
-
-// === Public Functions ===
-
-// === View Functions ===
-
-// === Admin Functions ===
-
-// === Package Functions ===
-
 // === Private Functions ===
-
-// === Test Functions ===

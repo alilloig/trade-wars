@@ -5,6 +5,7 @@
 /// A universe represents a game world with galaxies, systems, and planets.
 module trade_wars::universe;
 
+// === Imports ===
 use std::string::String;
 use sui::display::{Self, Display};
 use sui::event;
@@ -20,6 +21,7 @@ use trade_wars::universe_element_source::UniverseElementSource;
 /// Error code when an operation is attempted by someone who is not the universe creator
 const ENotUniverseCreator: u64 = 0;
 const EUniverseNotInitialized: u64 = 1;
+
 // === Constants ===
 
 // === Structs ===
@@ -28,18 +30,6 @@ public struct UniverseCreatorCap has key, store {
     id: UID,
     /// ID of the universe this capability has control over
     universe: ID,
-}
-
-// === ::UniverseCreatorCap Private Functions ===
-/// Creates a new capability for the universe creator
-fun create_universe_creator_capability(
-    universe: &Universe,
-    ctx: &mut TxContext,
-): UniverseCreatorCap {
-    UniverseCreatorCap {
-        id: object::new(ctx),
-        universe: object::id(universe),
-    }
 }
 
 /// Information about a universe that can be stored and emitted in events
@@ -54,56 +44,6 @@ public struct UniverseInfo has copy, drop, store {
     planets: u8,
     /// Flag indicating if the universe is open for registration
     open: bool,
-}
-
-// === ::UniverseInfo Package Functions ===
-/// Creates a new UniverseInfo object with the given parameters
-public(package) fun create_universe_info(
-    name: String,
-    galaxies: u8,
-    systems: u8,
-    planets: u8,
-    open: bool,
-): UniverseInfo {
-    UniverseInfo {
-        name,
-        galaxies,
-        systems,
-        planets,
-        open
-    }
-}
-
-// ::getters
-/// Returns the name of the universe
-public(package) fun name(self: &UniverseInfo): String {
-    self.name
-}
-
-/// Returns the number of galaxies in the universe
-public(package) fun galaxies(self: &UniverseInfo): u8 {
-    self.galaxies
-}
-
-/// Returns the number of systems per galaxy
-public(package) fun systems(self: &UniverseInfo): u8 {
-    self.systems
-}
-
-/// Returns the number of planets per system
-public(package) fun planets(self: &UniverseInfo): u8 {
-    self.planets
-}
-
-// ::setters
-/// Sets the universe info as open
-public(package) fun open_universe_info(self: &mut UniverseInfo) {
-    self.open = true
-}
-
-/// Sets the universe info as closed
-public(package) fun close_universe_info(self: &mut UniverseInfo) {
-    self.open = false
 }
 
 /// The main Universe object that represents a game world
@@ -124,6 +64,20 @@ public struct Universe has key, store {
     thorium_source: Option<ID>,
 }
 
+// == Events ==
+/// Event emitted when a new Universe is created
+public struct UniverseCreated has copy, drop {
+    /// ID of the newly created Universe
+    id: ID,
+    /// Timestamp of when the Universe was created
+    genesis: u64,
+    /// Information about the Universe
+    info: UniverseInfo,
+}
+
+// === Public Functions ===
+
+// === View Functions ===
 public fun open(self: &Universe): bool {
     self.open
 }
@@ -146,7 +100,26 @@ public fun thorium_source(self: &Universe): ID {
     *self.thorium_source.borrow()
 }
 
-// ::constructor
+// === Admin Functions ===
+
+// === Package Functions ===
+/// Creates a new UniverseInfo object with the given parameters
+public(package) fun create_universe_info(
+    name: String,
+    galaxies: u8,
+    systems: u8,
+    planets: u8,
+    open: bool,
+): UniverseInfo {
+    UniverseInfo {
+        name,
+        galaxies,
+        systems,
+        planets,
+        open
+    }
+}
+
 /// Creates a new Universe with the given info and genesis timestamp
 public(package) fun create_universe(
     info: UniverseInfo,
@@ -174,14 +147,6 @@ public(package) fun create_universe(
     (universe, capability)
 }
 
-// ::getters
-/// Returns a mutable reference to the free planets vector
-fun get_free_planet(self: &mut Universe, randomizer: &mut RandomGenerator): PlanetInfo {
-    randomizer.shuffle<PlanetInfo>(&mut self.free_planets);
-    self.free_planets.pop_back()
-}
-
-// ::setters
 /// Links the element sources to this Universe
 public(package) fun link_elements_sources(
     self: &mut Universe,
@@ -194,6 +159,14 @@ public(package) fun link_elements_sources(
     link_thorium_source(self, tho_source);
 }
 
+/// Checks if the creator capability has access to this Universe
+public(package) fun creator_has_access(
+    self: &Universe,
+    creator_cap: &UniverseCreatorCap,
+): bool {
+    object::id(self) == creator_cap.universe
+}
+
 /// Opens the universe for player registration (only callable by the universe creator)
 public(package) fun open_universe(self: &mut Universe, creator_cap: &UniverseCreatorCap) {
     assert!(creator_has_access(self, creator_cap), ENotUniverseCreator);
@@ -204,15 +177,6 @@ public(package) fun open_universe(self: &mut Universe, creator_cap: &UniverseCre
 public(package) fun close_universe(self: &mut Universe, creator_cap: &UniverseCreatorCap) {
     assert!(creator_has_access(self, creator_cap), ENotUniverseCreator);
     self.open = false;
-}
-
-// ::Universe Package Functions
-/// Checks if the creator capability has access to this Universe
-public(package) fun creator_has_access(
-    self: &Universe,
-    creator_cap: &UniverseCreatorCap,
-): bool {
-    object::id(self) == creator_cap.universe
 }
 
 /// Randomly chooses a planet from the free planet pool and occupies it for the overseer
@@ -237,42 +201,36 @@ public(package) fun occupy_planet(
     )
 }
 
-// === ::Universe Private Functions ===
-/// Links an erbium source to this Universe
-fun link_erbium_source(self: &mut Universe, erb_source: ID) {
-    self.erbium_source.fill(erb_source);
+/// Returns the name of the universe
+public(package) fun name(self: &UniverseInfo): String {
+    self.name
 }
 
-/// Links a lanthanum source to this Universe
-fun link_lanthanum_source(self: &mut Universe, lan_source: ID) {
-    self.lanthanum_source.fill(lan_source);
+/// Returns the number of galaxies in the universe
+public(package) fun galaxies(self: &UniverseInfo): u8 {
+    self.galaxies
 }
 
-/// Links a thorium source to this Universe
-fun link_thorium_source(self: &mut Universe, tho_source: ID) {
-    self.thorium_source.fill(tho_source);
+/// Returns the number of systems per galaxy
+public(package) fun systems(self: &UniverseInfo): u8 {
+    self.systems
 }
 
-// == Events ==
-/// Event emitted when a new Universe is created
-public struct UniverseCreated has copy, drop {
-    /// ID of the newly created Universe
-    id: ID,
-    /// Timestamp of when the Universe was created
-    genesis: u64,
-    /// Information about the Universe
-    info: UniverseInfo,
+/// Returns the number of planets per system
+public(package) fun planets(self: &UniverseInfo): u8 {
+    self.planets
 }
 
-// === Method Aliases ===
+/// Sets the universe info as open
+public(package) fun open_universe_info(self: &mut UniverseInfo) {
+    self.open = true
+}
 
-// === Public Functions ===
+/// Sets the universe info as closed
+public(package) fun close_universe_info(self: &mut UniverseInfo) {
+    self.open = false
+}
 
-// === View Functions ===
-
-// === Admin Functions ===
-
-// === Package Functions ===
 /// Creates a Display for Universe objects
 public(package) fun get_universe_display(
     publisher: &Publisher,
@@ -301,6 +259,38 @@ public(package) fun get_universe_display(
 }
 
 // === Private Functions ===
+/// Creates a new capability for the universe creator
+fun create_universe_creator_capability(
+    universe: &Universe,
+    ctx: &mut TxContext,
+): UniverseCreatorCap {
+    UniverseCreatorCap {
+        id: object::new(ctx),
+        universe: object::id(universe),
+    }
+}
+
+/// Returns a mutable reference to the free planets vector
+fun get_free_planet(self: &mut Universe, randomizer: &mut RandomGenerator): PlanetInfo {
+    randomizer.shuffle<PlanetInfo>(&mut self.free_planets);
+    self.free_planets.pop_back()
+}
+
+/// Links an erbium source to this Universe
+fun link_erbium_source(self: &mut Universe, erb_source: ID) {
+    self.erbium_source.fill(erb_source);
+}
+
+/// Links a lanthanum source to this Universe
+fun link_lanthanum_source(self: &mut Universe, lan_source: ID) {
+    self.lanthanum_source.fill(lan_source);
+}
+
+/// Links a thorium source to this Universe
+fun link_thorium_source(self: &mut Universe, tho_source: ID) {
+    self.thorium_source.fill(tho_source);
+}
+
 /// Initializes the free planets list for a new Universe based on the UniverseInfo
 fun initialize_free_planets(info: &UniverseInfo): vector<PlanetInfo> {
     let mut planets = vector::empty<PlanetInfo>();
@@ -319,5 +309,3 @@ fun initialize_free_planets(info: &UniverseInfo): vector<PlanetInfo> {
     };
     planets
 }
-
-// === Test Functions ===
