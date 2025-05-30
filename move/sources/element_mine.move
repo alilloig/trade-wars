@@ -7,6 +7,7 @@
 /// if its not enough, it will use the funds from trading, which are actual minted balances stored in the planet
 module trade_wars::element_mine;
 
+// === Imports ===
 use sui::balance::Balance;
 use trade_wars::universe_element_source::UniverseElementSource;
 
@@ -16,7 +17,6 @@ use trade_wars::universe_element_source::UniverseElementSource;
 const MillisecondsPerSecond: u64 = 1000;
 
 // === Structs ===
-// === ::ElementMine ===
 /// Represents a mine that produces a specific element type
 public struct ElementMine<phantom T> has store {
     /// ID of the universe element source this mine is connected to
@@ -35,7 +35,15 @@ public struct ElementMine<phantom T> has store {
     thorium_upgrade_cost: u64,
 }
 
-// === ::ElementMine Package Functions ===
+// === Events ===
+
+// === Public Functions ===
+
+// === View Functions ===
+
+// === Admin Functions ===
+
+// === Package Functions ===
 /// Creates a new ElementMine connected to the provided element source
 public(package) fun create_mine<T>(source: &UniverseElementSource<T>, now: u64): ElementMine<T> {
     ElementMine {
@@ -119,18 +127,6 @@ public(package) fun use_element<T>(
     source.return_reserves<T>(element);
 }
 
-// === Events ===
-
-// === Method Aliases ===
-
-// === Public Functions ===
-
-// === View Functions ===
-
-// === Admin Functions ===
-
-// === Package Functions ===
-
 // === Private Functions ===
 /// Updates the mine's upgrade costs based on the current source configuration
 fun update_parameters<T>(self: &mut ElementMine<T>, source: &UniverseElementSource<T>) {
@@ -139,6 +135,3 @@ fun update_parameters<T>(self: &mut ElementMine<T>, source: &UniverseElementSour
     self.lanthanum_upgrade_cost = source.mines_parameters<T>().get_lanthanum_upgrade_cost();
     self.thorium_upgrade_cost = source.mines_parameters<T>().get_thorium_upgrade_cost();
 }
-
-
-// === Test Functions ===
