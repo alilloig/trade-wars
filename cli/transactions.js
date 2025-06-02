@@ -2,7 +2,7 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from '@mysten/sui/transactions';
 import dotenv from 'dotenv';
-import { updateTxDigestsFile, updateEnvFile, updateWebEnvFile } from './update_files.js';
+import { updateTxDigestsFile, updateEnvFile } from './update_files.js';
 import { execSync } from 'child_process';
 
 dotenv.config();
@@ -140,14 +140,6 @@ export async function createElementSources() {
         ERB_SOURCE_ID: erbSourceId,
         LAN_SOURCE_ID: lanSourceId,
         THO_SOURCE_ID: thoSourceId
-    });
-    
-    // Update web .env file
-    console.log('Updating web .env file...');
-    updateWebEnvFile({
-        VITE_ERB_SOURCE_ID_DEV: erbSourceId,
-        VITE_LAN_SOURCE_ID_DEV: lanSourceId,
-        VITE_THO_SOURCE_ID_DEV: thoSourceId
     });
     
     // Update tx-digests.json file
