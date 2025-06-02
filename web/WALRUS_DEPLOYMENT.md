@@ -11,10 +11,6 @@ The following environment variables are already embedded in your `.env` file and
 ```bash
 VITE_TRADE_WARS_PKG_DEV=0x6034acdfee1ead79374f0ec8d6bc9a472c1cd7e0ee03e2a4c35c2b3403ac8719
 VITE_TRADE_WARS_ID_DEV=0x56caed6e8a87c590a792ba6c7f24872323c8a85ebee5a2e0c09bcd8b1231c3d1
-VITE_TRADE_WARS_INFO_DEV=0x97d18f04367a3ca8117848c6ad95290ff9bf84be425ae06fdb03e5682cd20342
-VITE_ERB_SOURCE_ID_DEV=0x53b74c73944cea3d24388514c1023f00b5a1ba99bf2b5dc57ba95b3f5fa7a510
-VITE_LAN_SOURCE_ID_DEV=0x48fcf4dd0a610818918e0988e44956247fa44cb4c6462080ee3522fcf3cfd1c0
-VITE_THO_SOURCE_ID_DEV=0x648c59ed49a796cb8e808ff7db3f061d816a71bb98170cd34b53f16d8d83ad55
 ```
 
 These values are **automatically embedded** into the JavaScript bundle during build time using Vite's environment variable system.
