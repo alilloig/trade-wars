@@ -11,6 +11,7 @@ use sui::display::{Self, Display};
 use sui::event;
 use sui::package::Publisher;
 use sui::random::RandomGenerator;
+use sui::table::{Self, Table};
 use trade_wars::element_source::ElementSource;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
@@ -20,8 +21,12 @@ use trade_wars::thorium::THORIUM;
 // === Errors ===
 /// Error code when an operation is attempted by someone who is not the universe creator
 const ENotUniverseCreator: u64 = 0;
+/// Error code when universe has no more free planets
+const EUniverseFull: u64 = 1;
 
 // === Constants ===
+/// Percentage of system occupation that triggers frontier advancement (50%)
+const FRONTIER_THRESHOLD_PERCENT: u8 = 50;
 
 // === Structs ===
 /// Cap that grants special rights to the creator of a Universe
@@ -46,15 +51,19 @@ public struct UniverseInfo has copy, drop, store {
 }
 
 /// The main Universe object that represents a game world
-public struct Universe has key, store {
+public struct Universe has key {
     id: UID,
     name: String,
     galaxies: u8,
     systems: u8,
     planets: u8,
     open: bool,
-    /// List of available planets that have not been claimed
-    free_planets: vector<PlanetInfo>,
+    /// Current frontier galaxy for new player allocation
+    active_galaxy: u8,
+    /// Current frontier system for new player allocation
+    active_system: u8,
+    /// Per-system free planet positions: key = galaxy * systems + system_id
+    system_free_planets: Table<u16, vector<u8>>,
 }
 
 // == Events ==
@@ -95,12 +104,14 @@ public(package) fun create_universe_info(
     }
 }
 
-/// Creates a new Universe with the given info and genesis timestamp
+/// Creates a new Universe with the given info and genesis timestamp.
+/// The Universe is immediately shared (since it contains Table which lacks store).
+/// Returns the universe ID and creator capability.
 public(package) fun create_universe(
     info: UniverseInfo,
     genesis: u64,
     ctx: &mut TxContext,
-): (Universe, UniverseCreatorCap) {
+): (ID, UniverseCreatorCap) {
     let universe = Universe {
         id: object::new(ctx),
         name: info.name,
@@ -108,15 +119,20 @@ public(package) fun create_universe(
         systems: info.systems,
         planets: info.planets,
         open: info.open,
-        free_planets: initialize_free_planets(&info),
+        active_galaxy: 0,
+        active_system: 0,
+        system_free_planets: initialize_system_free_planets(&info, ctx),
     };
+    let universe_id = object::id(&universe);
     let capability = create_universe_creator_capability(&universe, ctx);
     event::emit(UniverseCreated {
-        id: object::id(&universe),
+        id: universe_id,
         genesis: genesis,
         info: info,
     });
-    (universe, capability)
+    // Share immediately since Universe contains Table (no store ability)
+    transfer::share_object(universe);
+    (universe_id, capability)
 }
 
 /// Checks if the creator capability has access to this Universe
@@ -230,27 +246,83 @@ fun create_universe_creator_capability(
     }
 }
 
-/// Returns a mutable reference to the free planets vector
-fun get_free_planet(self: &mut Universe, randomizer: &mut RandomGenerator): PlanetInfo {
-    randomizer.shuffle<PlanetInfo>(&mut self.free_planets);
-    self.free_planets.pop_back()
+/// Computes a unique key for a system based on galaxy and system indices
+fun system_key(galaxy: u8, system: u8, systems_per_galaxy: u8): u16 {
+    (galaxy as u16) * (systems_per_galaxy as u16) + (system as u16)
 }
 
-/// Initializes the free planets list for a new Universe based on the UniverseInfo
-fun initialize_free_planets(info: &UniverseInfo): vector<PlanetInfo> {
-    let mut planets = vector::empty<PlanetInfo>();
-    let mut i = 0;
-    while (i < info.galaxies) {
-        let mut j = 0;
-        while (j < info.systems) {
-            let mut k = 0;
-            while (k < info.planets) {
-                planets.push_back(create_planet_info(i, j, k));
-                k = k + 1;
+/// Gets a free planet from the active frontier system
+fun get_free_planet(self: &mut Universe, randomizer: &mut RandomGenerator): PlanetInfo {
+    // Ensure universe is not full
+    assert!(self.active_galaxy < self.galaxies, EUniverseFull);
+
+    let key = system_key(self.active_galaxy, self.active_system, self.systems);
+    let positions = self.system_free_planets.borrow_mut(key);
+
+    // Shuffle and pop a random position from the active system
+    randomizer.shuffle(positions);
+    let position = positions.pop_back();
+
+    // Create the planet info with current frontier coordinates
+    let info = create_planet_info(self.active_galaxy, self.active_system, position);
+
+    // Check if we should advance the frontier
+    check_and_advance_frontier(self);
+
+    info
+}
+
+/// Checks if the current system has reached the occupation threshold and advances if needed
+fun check_and_advance_frontier(self: &mut Universe) {
+    let key = system_key(self.active_galaxy, self.active_system, self.systems);
+    let remaining = self.system_free_planets.borrow(key).length();
+    let total = self.planets as u64;
+
+    // Calculate occupied percentage
+    let occupied = total - remaining;
+    let occupied_percent = (occupied * 100) / total;
+
+    if (occupied_percent >= (FRONTIER_THRESHOLD_PERCENT as u64)) {
+        advance_frontier(self);
+    }
+}
+
+/// Advances the frontier to the next system (or galaxy if needed)
+fun advance_frontier(self: &mut Universe) {
+    self.active_system = self.active_system + 1;
+    if (self.active_system >= self.systems) {
+        self.active_system = 0;
+        self.active_galaxy = self.active_galaxy + 1;
+    }
+    // Note: If active_galaxy >= galaxies, universe is full (handled in get_free_planet)
+}
+
+/// Initializes the per-system free planets table for a new Universe
+fun initialize_system_free_planets(
+    info: &UniverseInfo,
+    ctx: &mut TxContext,
+): Table<u16, vector<u8>> {
+    let mut system_planets = table::new<u16, vector<u8>>(ctx);
+
+    let mut galaxy = 0u8;
+    while (galaxy < info.galaxies) {
+        let mut system = 0u8;
+        while (system < info.systems) {
+            // Create vector of all positions for this system
+            let mut positions = vector::empty<u8>();
+            let mut pos = 0u8;
+            while (pos < info.planets) {
+                positions.push_back(pos);
+                pos = pos + 1;
             };
-            j = j + 1;
+
+            let key = system_key(galaxy, system, info.systems);
+            system_planets.add(key, positions);
+
+            system = system + 1;
         };
-        i = i + 1;
+        galaxy = galaxy + 1;
     };
-    planets
+
+    system_planets
 }

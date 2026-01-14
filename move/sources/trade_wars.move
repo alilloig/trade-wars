@@ -434,21 +434,18 @@ fun start_universe(
         planets,
         open,
     );
-    // Create a new universe object
-    let (universe, creator_capability) = universe::create_universe(
+    // Create a new universe object (shared automatically by universe module)
+    let (universe_id, creator_capability) = universe::create_universe(
         info,
         clock.timestamp_ms(),
         ctx,
     );
-    let universe_id = object::id(&universe);
     // Register the universe in the game object
     self.universes.insert<ID, UniverseInfo>(universe_id, info);
     // Include the universe ID on the list of open universes on game info object if the universe is created as open
     if (open) {
         game_info.add_open_universe(universe_id);
     };
-    // Share the universe object
-    transfer::public_share_object(universe);
     // Transfer creator capability
     transfer::public_transfer(creator_capability, ctx.sender());
 }
