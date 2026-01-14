@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useCurrentAccount, useSuiClient, useSuiClientQuery } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit';
 import { getEnvVar } from '../constants/env';
 import { parseU64 } from '../utils/sui/data-access';
 import { buildPlanetDataTx } from '../services/sui/transactions';
@@ -14,17 +14,12 @@ interface UsePlanetReturn {
   reserves: PlanetReserves;
   mineLevels: MineLevels;
   upgradeCosts: UpgradeCosts;
-  elementSources: {
-    erbium: string;
-    lanthanum: string;
-    thorium: string;
-  } | null;
   isLoading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
 }
 
-export function usePlanet({ planetId, universeId }: UsePlanetProps): UsePlanetReturn {
+export function usePlanet({ planetId, universeId: _universeId }: UsePlanetProps): UsePlanetReturn {
   const account = useCurrentAccount();
   const client = useSuiClient();
 
@@ -39,34 +34,6 @@ export function usePlanet({ planetId, universeId }: UsePlanetProps): UsePlanetRe
   const [error, setError] = useState<Error | null>(null);
 
   const packageId = getEnvVar('VITE_TRADE_WARS_PKG_DEV');
-
-  // Query the universe object to get element sources
-  const { data: universeData } = useSuiClientQuery(
-    'getObject',
-    {
-      id: universeId,
-      options: {
-        showContent: true,
-        showType: true,
-      },
-    },
-    {
-      enabled: !!universeId,
-    },
-  );
-
-  // Extract element sources from universe
-  const elementSources = (() => {
-    if (universeData?.data?.content && 'fields' in universeData.data.content) {
-      const fields = universeData.data.content.fields as any;
-      return {
-        erbium: fields.erbium_source,
-        lanthanum: fields.lanthanum_source,
-        thorium: fields.thorium_source,
-      };
-    }
-    return null;
-  })();
 
   // Fetch planet data using devInspect with SDK BCS parsing
   const fetchPlanetData = useCallback(async () => {
@@ -150,7 +117,6 @@ export function usePlanet({ planetId, universeId }: UsePlanetProps): UsePlanetRe
     reserves,
     mineLevels,
     upgradeCosts,
-    elementSources,
     isLoading,
     error,
     refetch: fetchPlanetData,

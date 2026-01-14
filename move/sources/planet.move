@@ -11,10 +11,10 @@ use sui::display::{Self, Display};
 use sui::package::Publisher;
 use sui::clock::Clock;
 use trade_wars::element_mine::{Self, ElementMine};
+use trade_wars::element_source::ElementSource;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::thorium::THORIUM;
-use trade_wars::universe_element_source::UniverseElementSource;
 
 // === Errors ===
 /// Error code when an operation is attempted by someone who is not the planet's overseer
@@ -160,9 +160,9 @@ public(package) fun create_planet_info(galaxy: u8, system: u8, position: u8): Pl
 public(package) fun create_and_share_planet(
     info: PlanetInfo,
     system_size: u8,
-    erbium_source: &UniverseElementSource<ERBIUM>,
-    lanthanum_source: &UniverseElementSource<LANTHANUM>,
-    thorium_source: &UniverseElementSource<THORIUM>,
+    erbium_source: &ElementSource<ERBIUM>,
+    lanthanum_source: &ElementSource<LANTHANUM>,
+    thorium_source: &ElementSource<THORIUM>,
     now: u64,
     ctx: &mut TxContext,
 ): PlanetCap {
@@ -186,9 +186,9 @@ public(package) fun create_and_share_planet(
 public(package) fun upgrade_erbium_mine(
     self: &mut Planet,
     cap: &PlanetCap,
-    erb_source: &mut UniverseElementSource<ERBIUM>,
-    lan_source: &mut UniverseElementSource<LANTHANUM>,
-    tho_source: &mut UniverseElementSource<THORIUM>,
+    erb_source: &mut ElementSource<ERBIUM>,
+    lan_source: &mut ElementSource<LANTHANUM>,
+    tho_source: &mut ElementSource<THORIUM>,
     now: u64,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
@@ -205,9 +205,10 @@ public(package) fun upgrade_erbium_mine(
     if (self.thorium_store.value<THORIUM>() < tho_cost) {
         self.thorium_store.join(self.thorium_mine.extract_element<THORIUM>(tho_source, now));
     };
-    erb_source.return_reserves<ERBIUM>(self.erbium_store.split(erb_cost));
-    lan_source.return_reserves<LANTHANUM>(self.lanthanum_store.split(lan_cost));
-    tho_source.return_reserves<THORIUM>(self.thorium_store.split(tho_cost));
+    // Burn the spent resources
+    erb_source.burn_resources<ERBIUM>(self.erbium_store.split(erb_cost));
+    lan_source.burn_resources<LANTHANUM>(self.lanthanum_store.split(lan_cost));
+    tho_source.burn_resources<THORIUM>(self.thorium_store.split(tho_cost));
     self.erbium_mine.upgrade_mine();
 }
 
@@ -215,9 +216,9 @@ public(package) fun upgrade_erbium_mine(
 public(package) fun upgrade_lanthanum_mine(
     self: &mut Planet,
     cap: &PlanetCap,
-    erb_source: &mut UniverseElementSource<ERBIUM>,
-    lan_source: &mut UniverseElementSource<LANTHANUM>,
-    tho_source: &mut UniverseElementSource<THORIUM>,
+    erb_source: &mut ElementSource<ERBIUM>,
+    lan_source: &mut ElementSource<LANTHANUM>,
+    tho_source: &mut ElementSource<THORIUM>,
     now: u64,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
@@ -234,9 +235,10 @@ public(package) fun upgrade_lanthanum_mine(
     if (self.thorium_store.value<THORIUM>() < tho_cost) {
         self.thorium_store.join(self.thorium_mine.extract_element<THORIUM>(tho_source, now));
     };
-    erb_source.return_reserves<ERBIUM>(self.erbium_store.split(erb_cost));
-    lan_source.return_reserves<LANTHANUM>(self.lanthanum_store.split(lan_cost));
-    tho_source.return_reserves<THORIUM>(self.thorium_store.split(tho_cost));
+    // Burn the spent resources
+    erb_source.burn_resources<ERBIUM>(self.erbium_store.split(erb_cost));
+    lan_source.burn_resources<LANTHANUM>(self.lanthanum_store.split(lan_cost));
+    tho_source.burn_resources<THORIUM>(self.thorium_store.split(tho_cost));
     self.lanthanum_mine.upgrade_mine();
 }
 
@@ -244,9 +246,9 @@ public(package) fun upgrade_lanthanum_mine(
 public(package) fun upgrade_thorium_mine(
     self: &mut Planet,
     cap: &PlanetCap,
-    erb_source: &mut UniverseElementSource<ERBIUM>,
-    lan_source: &mut UniverseElementSource<LANTHANUM>,
-    tho_source: &mut UniverseElementSource<THORIUM>,
+    erb_source: &mut ElementSource<ERBIUM>,
+    lan_source: &mut ElementSource<LANTHANUM>,
+    tho_source: &mut ElementSource<THORIUM>,
     now: u64,
 ) {
     assert!(check_overseer_authority(self, cap), ENotPlanetOverseer);
@@ -263,6 +265,10 @@ public(package) fun upgrade_thorium_mine(
     if (self.erbium_store.value<ERBIUM>() < erb_cost) {
         self.erbium_store.join(self.erbium_mine.extract_element<ERBIUM>(erb_source, now));
     };
+    // Burn the spent resources
+    erb_source.burn_resources<ERBIUM>(self.erbium_store.split(erb_cost));
+    lan_source.burn_resources<LANTHANUM>(self.lanthanum_store.split(lan_cost));
+    tho_source.burn_resources<THORIUM>(self.thorium_store.split(tho_cost));
     self.thorium_mine.upgrade_mine();
 }
 

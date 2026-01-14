@@ -9,12 +9,12 @@ use sui::clock::Clock;
 use sui::object_table::{Self, ObjectTable};
 use sui::random::Random;
 use sui::table::{Self, Table};
+use trade_wars::element_source::ElementSource;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::planet::{Planet, PlanetCap};
 use trade_wars::thorium::THORIUM;
 use trade_wars::universe::Universe;
-use trade_wars::universe_element_source::UniverseElementSource;
 
 // === Errors ===
 const EOverseerAlreadyJoinedUniverse: u64 = 0;
@@ -44,13 +44,13 @@ entry fun vest_overseer(ctx: &mut TxContext) {
 // Get a &mut to address owned Overseer
 // MakeMoveCall tradewars.join_universe(overseer)
 // Allows an overseer to join a universe and be assigned a random planet
-///
+/// Now uses global ElementSource objects instead of universe-specific ones
 entry fun join_universe(
     self: &mut Overseer,
     universe: &mut Universe,
-    erb_source: &UniverseElementSource<ERBIUM>,
-    lan_source: &UniverseElementSource<LANTHANUM>,
-    tho_source: &UniverseElementSource<THORIUM>,
+    erb_source: &ElementSource<ERBIUM>,
+    lan_source: &ElementSource<LANTHANUM>,
+    tho_source: &ElementSource<THORIUM>,
     r: &Random,
     c: &Clock,
     ctx: &mut TxContext,
@@ -88,9 +88,9 @@ entry fun upgrade_erbium_planet_mine(
     self: &Overseer,
     universe: ID,
     planet: &mut Planet,
-    erb_source: &mut UniverseElementSource<ERBIUM>,
-    lan_source: &mut UniverseElementSource<LANTHANUM>,
-    tho_source: &mut UniverseElementSource<THORIUM>,
+    erb_source: &mut ElementSource<ERBIUM>,
+    lan_source: &mut ElementSource<LANTHANUM>,
+    tho_source: &mut ElementSource<THORIUM>,
     c: &Clock,
 ) {
     let planet_id = object::id(planet);
@@ -103,14 +103,14 @@ entry fun upgrade_erbium_planet_mine(
     );
 }
 
-///
+/// Upgrades the lanthanum mine on a planet
 entry fun upgrade_lanthanum_planet_mine(
     self: &Overseer,
     universe: ID,
     planet: &mut Planet,
-    erb_source: &mut UniverseElementSource<ERBIUM>,
-    lan_source: &mut UniverseElementSource<LANTHANUM>,
-    tho_source: &mut UniverseElementSource<THORIUM>,
+    erb_source: &mut ElementSource<ERBIUM>,
+    lan_source: &mut ElementSource<LANTHANUM>,
+    tho_source: &mut ElementSource<THORIUM>,
     c: &Clock,
 ) {
     let planet_id = object::id(planet);
@@ -123,14 +123,14 @@ entry fun upgrade_lanthanum_planet_mine(
     );
 }
 
-///
+/// Upgrades the thorium mine on a planet
 entry fun upgrade_thorium_planet_mine(
     self: &Overseer,
     universe: ID,
     planet: &mut Planet,
-    erb_source: &mut UniverseElementSource<ERBIUM>,
-    lan_source: &mut UniverseElementSource<LANTHANUM>,
-    tho_source: &mut UniverseElementSource<THORIUM>,
+    erb_source: &mut ElementSource<ERBIUM>,
+    lan_source: &mut ElementSource<LANTHANUM>,
+    tho_source: &mut ElementSource<THORIUM>,
     c: &Clock,
 ) {
     let planet_id = object::id(planet);

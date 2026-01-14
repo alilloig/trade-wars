@@ -9,7 +9,7 @@ module trade_wars::element_mine;
 
 // === Imports ===
 use sui::balance::Balance;
-use trade_wars::universe_element_source::UniverseElementSource;
+use trade_wars::element_source::ElementSource;
 
 // === Errors ===
 
@@ -19,7 +19,7 @@ const MillisecondsPerSecond: u64 = 1000;
 // === Structs ===
 /// Represents a mine that produces a specific element type
 public struct ElementMine<phantom T> has store {
-    /// ID of the universe element source this mine is connected to
+    /// ID of the global element source this mine is connected to
     source: ID,
     /// Current level of the mine (affects production rate)
     level: u64,
@@ -44,16 +44,16 @@ public struct ElementMine<phantom T> has store {
 // === Admin Functions ===
 
 // === Package Functions ===
-/// Creates a new ElementMine connected to the provided element source
-public(package) fun create_mine<T>(source: &UniverseElementSource<T>, now: u64): ElementMine<T> {
+/// Creates a new ElementMine connected to the provided global element source
+public(package) fun create_mine<T>(source: &ElementSource<T>, now: u64): ElementMine<T> {
     ElementMine {
         source: object::id(source),
         level: 1,
         last_extraction_time: now,
-        production_factor: source.mines_parameters<T>().get_production_factor(),
-        erbium_upgrade_cost: source.mines_parameters<T>().get_erbium_upgrade_cost(),
-        lanthanum_upgrade_cost: source.mines_parameters<T>().get_lanthanum_upgrade_cost(),
-        thorium_upgrade_cost: source.mines_parameters<T>().get_thorium_upgrade_cost(),
+        production_factor: source.get_mine_parameters<T>().get_production_factor(),
+        erbium_upgrade_cost: source.get_mine_parameters<T>().get_erbium_upgrade_cost(),
+        lanthanum_upgrade_cost: source.get_mine_parameters<T>().get_lanthanum_upgrade_cost(),
+        thorium_upgrade_cost: source.get_mine_parameters<T>().get_thorium_upgrade_cost(),
     }
 }
 
@@ -101,13 +101,14 @@ public(package) fun upgrade_mine<T>(
 }
 
 /// Extracts produced elements from the mine based on time passed since last extraction
+/// Uses mint-on-demand: tokens are minted directly from the global source
 public(package) fun extract_element<T>(
     self: &mut ElementMine<T>,
-    source: &mut UniverseElementSource<T>,
+    source: &mut ElementSource<T>,
     now: u64,
 ): Balance<T> {
-    // Get as much balance from the source as has been produced since the last extraction
-    let extraction = source.extract(self.amount_produced(now));
+    // Mint tokens directly from the source based on production since last extraction
+    let extraction = source.mint_for_extraction(self.amount_produced(now));
     // Update the last extraction time to the current time
     self.last_extraction_time = now;
     // After extracting, update parameters from source. Only way for players to opt out of parameters
@@ -116,22 +117,23 @@ public(package) fun extract_element<T>(
     extraction
 }
 
-/// Returns the element to the source
+/// Burns the spent element tokens
 public(package) fun use_element<T>(
     self: &mut ElementMine<T>,
-    source: &mut UniverseElementSource<T>,
+    source: &mut ElementSource<T>,
     element: Balance<T>,
 ) {
     // When "burning" the used element, update parameters from source
     self.update_parameters<T>(source);
-    source.return_reserves<T>(element);
+    // Burn the spent resources
+    source.burn_resources<T>(element);
 }
 
 // === Private Functions ===
 /// Updates the mine's upgrade costs based on the current source configuration
-fun update_parameters<T>(self: &mut ElementMine<T>, source: &UniverseElementSource<T>) {
-    self.production_factor = source.mines_parameters<T>().get_production_factor();
-    self.erbium_upgrade_cost = source.mines_parameters<T>().get_erbium_upgrade_cost();
-    self.lanthanum_upgrade_cost = source.mines_parameters<T>().get_lanthanum_upgrade_cost();
-    self.thorium_upgrade_cost = source.mines_parameters<T>().get_thorium_upgrade_cost();
+fun update_parameters<T>(self: &mut ElementMine<T>, source: &ElementSource<T>) {
+    self.production_factor = source.get_mine_parameters<T>().get_production_factor();
+    self.erbium_upgrade_cost = source.get_mine_parameters<T>().get_erbium_upgrade_cost();
+    self.lanthanum_upgrade_cost = source.get_mine_parameters<T>().get_lanthanum_upgrade_cost();
+    self.thorium_upgrade_cost = source.get_mine_parameters<T>().get_thorium_upgrade_cost();
 }

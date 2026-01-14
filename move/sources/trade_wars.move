@@ -20,7 +20,6 @@ use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::mine_configuration_parameters;
 use trade_wars::thorium::THORIUM;
 use trade_wars::universe::{Self, Universe, UniverseInfo, UniverseCreatorCap};
-use trade_wars::universe_element_source;
 use trade_wars::planet::Self;
 
 // === Errors ===
@@ -358,24 +357,6 @@ entry fun set_universe_creation_fees(
     info.universe_creation_price = price;
 }
 
-/// Sets the refill quantity for T mines
-entry fun set_sources_refill_qty<T>(
-    self: &mut ElementSource<T>,
-    _cap: &GameAdminCap,
-    refill_qty: u64,
-) {
-    element_source::set_sources_refill_qty<T>(self, refill_qty);
-}
-
-/// Sets the refill threshold for T mines
-entry fun set_sources_refill_threshold<T>(
-    self: &mut ElementSource<T>,
-    _cap: &GameAdminCap,
-    refill_threshold: u64,
-) {
-    element_source::set_sources_refill_threshold<T>(self, refill_threshold);
-}
-
 /// Sets the parameters for T mines
 entry fun set_mines_parameters<T>(
     self: &mut ElementSource<T>,
@@ -429,13 +410,14 @@ fun new_game(_cap: &GameAdminCap, ctx: &mut TxContext): TradeWars {
 }
 
 /// Creates and starts a new universe in the game
+/// With mint-on-demand, universes no longer need their own element sources
 #[allow(lint(self_transfer))]
 fun start_universe(
     self: &mut TradeWars,
     game_info: &mut TradeWarsInfo,
-    erb_source: &ElementSource<ERBIUM>,
-    lan_source: &ElementSource<LANTHANUM>,
-    tho_source: &ElementSource<THORIUM>,
+    _erb_source: &ElementSource<ERBIUM>,
+    _lan_source: &ElementSource<LANTHANUM>,
+    _tho_source: &ElementSource<THORIUM>,
     name: String,
     galaxies: u8,
     systems: u8,
@@ -444,7 +426,6 @@ fun start_universe(
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
-
     // Construct the universe info
     let info = universe::create_universe_info(
         name,
@@ -454,7 +435,7 @@ fun start_universe(
         open,
     );
     // Create a new universe object
-    let (mut universe, creator_capability) = universe::create_universe(
+    let (universe, creator_capability) = universe::create_universe(
         info,
         clock.timestamp_ms(),
         ctx,
@@ -466,45 +447,6 @@ fun start_universe(
     if (open) {
         game_info.add_open_universe(universe_id);
     };
-    // Create the universe element source for erbium
-    let universe_erbium_source = universe_element_source::create_universe_element_source<ERBIUM>(
-        universe_id,
-        object::id(erb_source),
-        element_source::get_sources_refill_threshold(erb_source),
-        element_source::get_mine_parameters(erb_source),
-        ctx,
-    );
-    let universe_erbium_source_id = object::id(&universe_erbium_source);
-
-    // Create the universe element source for lanthanum
-    let universe_lanthanum_source = universe_element_source::create_universe_element_source<LANTHANUM>(
-        universe_id,
-        object::id(lan_source),
-        element_source::get_sources_refill_threshold(lan_source),
-        element_source::get_mine_parameters(lan_source),
-        ctx,
-    );
-    let universe_lanthanum_source_id = object::id(&universe_lanthanum_source);
-    // Create the universe element source for thorium
-    let universe_thorium_source = universe_element_source::create_universe_element_source<THORIUM>(
-        universe_id,
-        object::id(tho_source),
-        element_source::get_sources_refill_threshold(tho_source),
-        element_source::get_mine_parameters(tho_source),
-        ctx,
-    );
-    let universe_thorium_source_id = object::id(&universe_thorium_source);
-
-    // Link the universe element source to the universe
-    universe.link_elements_sources(
-        universe_erbium_source_id,
-        universe_lanthanum_source_id,
-        universe_thorium_source_id,
-    );
-    // Share all universe element sources
-    transfer::public_share_object(universe_erbium_source);
-    transfer::public_share_object(universe_lanthanum_source);
-    transfer::public_share_object(universe_thorium_source);
     // Share the universe object
     transfer::public_share_object(universe);
     // Transfer creator capability

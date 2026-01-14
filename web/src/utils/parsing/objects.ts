@@ -20,9 +20,6 @@ export function extractUniverseData(obj: SuiObjectResponse): UniverseData {
     systems: Number(fields.systems || 0),
     planets: Number(fields.planets || 0),
     open: Boolean(fields.open),
-    erbiumSource: fields.erbium_source || '',
-    lanthanumSource: fields.lanthanum_source || '',
-    thoriumSource: fields.thorium_source || '',
   };
 }
 
@@ -67,27 +64,6 @@ export function extractPlanetInfo(obj: SuiObjectResponse, imageIndex: number): P
   };
 }
 
-/**
- * Get element sources from universe data
- */
-export function getElementSources(universeData: any): {
-  erbium: string;
-  lanthanum: string;
-  thorium: string;
-} | null {
-  if (!universeData?.data?.content || universeData.data.content.dataType !== 'moveObject') {
-    return null;
-  }
-
-  const fields = universeData.data.content.fields as any;
-
-  return {
-    erbium: fields.erbium_source || '',
-    lanthanum: fields.lanthanum_source || '',
-    thorium: fields.thorium_source || '',
-  };
-}
-
 // Helper functions
 
 function createEmptyUniverseData(id: string): UniverseData {
@@ -98,8 +74,5 @@ function createEmptyUniverseData(id: string): UniverseData {
     systems: 0,
     planets: 0,
     open: false,
-    erbiumSource: '',
-    lanthanumSource: '',
-    thoriumSource: '',
   };
 }

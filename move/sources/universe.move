@@ -11,16 +11,15 @@ use sui::display::{Self, Display};
 use sui::event;
 use sui::package::Publisher;
 use sui::random::RandomGenerator;
+use trade_wars::element_source::ElementSource;
 use trade_wars::erbium::ERBIUM;
 use trade_wars::lanthanum::LANTHANUM;
 use trade_wars::planet::{Self, PlanetInfo, PlanetCap, create_planet_info};
 use trade_wars::thorium::THORIUM;
-use trade_wars::universe_element_source::UniverseElementSource;
 
 // === Errors ===
 /// Error code when an operation is attempted by someone who is not the universe creator
 const ENotUniverseCreator: u64 = 0;
-const EUniverseNotInitialized: u64 = 1;
 
 // === Constants ===
 
@@ -56,12 +55,6 @@ public struct Universe has key, store {
     open: bool,
     /// List of available planets that have not been claimed
     free_planets: vector<PlanetInfo>,
-    /// ID of the Erbium source for this universe
-    erbium_source: Option<ID>,
-    /// ID of the Lanthanum source for this universe
-    lanthanum_source: Option<ID>,
-    /// ID of the Thorium source for this universe
-    thorium_source: Option<ID>,
 }
 
 // == Events ==
@@ -80,24 +73,6 @@ public struct UniverseCreated has copy, drop {
 // === View Functions ===
 public fun open(self: &Universe): bool {
     self.open
-}
-
-/// Returns the Erbium source for this universe
-public fun erbium_source(self: &Universe): ID {
-    assert!(self.erbium_source.is_some(), EUniverseNotInitialized);
-    *self.erbium_source.borrow()
-}
-
-/// Returns the Lanthanum source for this universe
-public fun lanthanum_source(self: &Universe): ID {
-    assert!(self.lanthanum_source.is_some(), EUniverseNotInitialized);
-    *self.lanthanum_source.borrow()
-}
-
-/// Returns the Thorium source for this universe
-public fun thorium_source(self: &Universe): ID {
-    assert!(self.thorium_source.is_some(), EUniverseNotInitialized);
-    *self.thorium_source.borrow()
 }
 
 // === Admin Functions ===
@@ -133,9 +108,6 @@ public(package) fun create_universe(
         systems: info.systems,
         planets: info.planets,
         open: info.open,
-        erbium_source: option::none(),
-        lanthanum_source: option::none(),
-        thorium_source: option::none(),
         free_planets: initialize_free_planets(&info),
     };
     let capability = create_universe_creator_capability(&universe, ctx);
@@ -145,18 +117,6 @@ public(package) fun create_universe(
         info: info,
     });
     (universe, capability)
-}
-
-/// Links the element sources to this Universe
-public(package) fun link_elements_sources(
-    self: &mut Universe,
-    erb_source: ID,
-    lan_source: ID,
-    tho_source: ID,
-) {
-    link_erbium_source(self, erb_source);
-    link_lanthanum_source(self, lan_source);
-    link_thorium_source(self, tho_source);
 }
 
 /// Checks if the creator capability has access to this Universe
@@ -182,9 +142,9 @@ public(package) fun close_universe(self: &mut Universe, creator_cap: &UniverseCr
 /// Randomly chooses a planet from the free planet pool and occupies it for the overseer
 public(package) fun occupy_planet(
     self: &mut Universe,
-    erb_source: &UniverseElementSource<ERBIUM>,
-    lan_source: &UniverseElementSource<LANTHANUM>,
-    tho_source: &UniverseElementSource<THORIUM>,
+    erb_source: &ElementSource<ERBIUM>,
+    lan_source: &ElementSource<LANTHANUM>,
+    tho_source: &ElementSource<THORIUM>,
     now: u64,
     randomizer: &mut RandomGenerator,
     ctx: &mut TxContext,
@@ -274,21 +234,6 @@ fun create_universe_creator_capability(
 fun get_free_planet(self: &mut Universe, randomizer: &mut RandomGenerator): PlanetInfo {
     randomizer.shuffle<PlanetInfo>(&mut self.free_planets);
     self.free_planets.pop_back()
-}
-
-/// Links an erbium source to this Universe
-fun link_erbium_source(self: &mut Universe, erb_source: ID) {
-    self.erbium_source.fill(erb_source);
-}
-
-/// Links a lanthanum source to this Universe
-fun link_lanthanum_source(self: &mut Universe, lan_source: ID) {
-    self.lanthanum_source.fill(lan_source);
-}
-
-/// Links a thorium source to this Universe
-fun link_thorium_source(self: &mut Universe, tho_source: ID) {
-    self.thorium_source.fill(tho_source);
 }
 
 /// Initializes the free planets list for a new Universe based on the UniverseInfo

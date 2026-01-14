@@ -33,9 +33,6 @@ export interface UniverseData {
   systems: number;
   planets: number;
   open: boolean;
-  erbiumSource: string;
-  lanthanumSource: string;
-  thoriumSource: string;
 }
 
 export interface OverseerData {

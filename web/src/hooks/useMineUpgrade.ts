@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
-import { getEnvVar } from '../constants/env';
+import { getEnvVar, getGlobalElementSources } from '../constants/env';
 import { buildUpgradeMineTx } from '../services/sui/transactions';
 import { ElementType, PlanetReserves, UpgradeCosts } from '../types';
 
@@ -8,11 +8,6 @@ interface UseMineUpgradeProps {
   planetId: string;
   overseerId: string;
   universeId: string;
-  elementSources: {
-    erbium: string;
-    lanthanum: string;
-    thorium: string;
-  } | null;
   reserves: PlanetReserves;
   upgradeCosts: UpgradeCosts;
   onSuccess?: () => void;
@@ -29,7 +24,6 @@ export function useMineUpgrade({
   planetId,
   overseerId,
   universeId,
-  elementSources,
   reserves,
   upgradeCosts,
   onSuccess,
@@ -67,23 +61,18 @@ export function useMineUpgrade({
       return;
     }
 
-    if (!elementSources) {
-      setStatus('Element sources not available');
-      setTimeout(() => setStatus(''), 3000);
-      return;
-    }
-
     setIsUpgrading(mineType);
     setStatus(`Upgrading ${mineType} mine...`);
 
+    const globalSources = getGlobalElementSources();
     const tx = buildUpgradeMineTx(mineType, {
       packageId,
       overseerId,
       universeId,
       planetId,
-      erbiumSource: elementSources.erbium,
-      lanthanumSource: elementSources.lanthanum,
-      thoriumSource: elementSources.thorium,
+      erbiumSource: globalSources.erbium,
+      lanthanumSource: globalSources.lanthanum,
+      thoriumSource: globalSources.thorium,
     });
 
     signAndExecute(
@@ -108,7 +97,6 @@ export function useMineUpgrade({
     account,
     isUpgrading,
     canAfford,
-    elementSources,
     packageId,
     overseerId,
     universeId,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCurrentAccount, useSuiClientQuery, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
-import { getEnvVar } from '../constants/env';
+import { getEnvVar, getGlobalElementSources } from '../constants/env';
 import { buildJoinUniverseTx } from '../services/sui/transactions';
 import { UniverseData } from '../types';
 
@@ -122,7 +122,7 @@ export function useUniverses({ overseerId }: UseUniversesProps): UseUniversesRet
     const id = universeObject?.data?.objectId || '';
     const content = universeObject?.data?.content;
 
-    let name, galaxies, systems, planets, open, erbiumSource, lanthanumSource, thoriumSource;
+    let name, galaxies, systems, planets, open;
 
     if (content && 'fields' in content) {
       const fields = content.fields as any;
@@ -131,9 +131,6 @@ export function useUniverses({ overseerId }: UseUniversesProps): UseUniversesRet
       systems = Number(fields.systems || 0);
       planets = Number(fields.planets || 0);
       open = fields.open === true;
-      erbiumSource = fields.erbium_source;
-      lanthanumSource = fields.lanthanum_source;
-      thoriumSource = fields.thorium_source;
     }
 
     return {
@@ -143,26 +140,24 @@ export function useUniverses({ overseerId }: UseUniversesProps): UseUniversesRet
       systems: systems || 0,
       planets: planets || 0,
       open: open || false,
-      erbiumSource: erbiumSource || '',
-      lanthanumSource: lanthanumSource || '',
-      thoriumSource: thoriumSource || '',
     };
   }, []);
 
   const joinUniverse = useCallback((universe: UniverseData) => {
-    if (!account || joiningUniverse || !universe.erbiumSource) {
+    if (!account || joiningUniverse) {
       return;
     }
 
     setJoiningUniverse(universe.id);
 
+    const globalSources = getGlobalElementSources();
     const tx = buildJoinUniverseTx({
       packageId,
       overseerId,
       universeId: universe.id,
-      erbiumSource: universe.erbiumSource,
-      lanthanumSource: universe.lanthanumSource,
-      thoriumSource: universe.thoriumSource,
+      erbiumSource: globalSources.erbium,
+      lanthanumSource: globalSources.lanthanum,
+      thoriumSource: globalSources.thorium,
     });
 
     signAndExecute(
