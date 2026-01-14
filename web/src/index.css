@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-orbitron;
+  }
+}
+
+@layer components {
+  .card-element-erbium {
+    @apply bg-element-erbium/10 border border-element-erbium;
+  }
+
+  .card-element-lanthanum {
+    @apply bg-element-lanthanum/10 border border-element-lanthanum;
+  }
+
+  .card-element-thorium {
+    @apply bg-element-thorium/10 border border-element-thorium;
+  }
+
+  .card-universe-joined {
+    @apply bg-status-success/10 border border-status-success cursor-pointer;
+  }
+
+  .card-universe-available {
+    @apply bg-status-warning/10 border border-status-warning cursor-pointer;
+  }
+}
